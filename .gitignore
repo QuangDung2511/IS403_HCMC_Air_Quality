@@ -1,20 +1,30 @@
-# Môi trường ảo (Tuyệt đối không push cái này lên)
+# 1. Môi trường ảo (Tuyệt đối không push cái này lên)
 .venv/
 venv/
 env/
 
-# Jupyter Notebook checkpoints
+# 2. Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 
-# Python cache
+# 3. Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
-# Cấu hình IDE
+# 4. Cấu hình IDE (nếu team dùng chung VS Code thì có thể giữ, nhưng thường nên bỏ)
 .vscode/
 
-# Tùy chọn Data: 
-# Nếu file data của bạn nhỏ (vài MB) thì CÓ THỂ push để team cùng dùng.
-# Nhưng nếu data lớn (>100MB), hãy bỏ comment 2 dòng dưới đây để Git bỏ qua chúng:
-# data/raw/
-# data/processed/
+# 5. Bỏ qua các file trọng số Model nặng (giữ lại file __init__.py)
+models/*.h5
+models/*.pt
+models/*.pkl
+models/*.keras
+models/*.joblib
+
+# 6. Bỏ qua kết quả dự báo/biểu đồ sinh ra tại máy cá nhân (giữ lại cấu trúc folder)
+outputs/figures/*
+!outputs/figures/.gitkeep
+
+outputs/predictions/*
+!outputs/predictions/.gitkeep
