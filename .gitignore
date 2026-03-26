@@ -28,3 +28,4 @@ outputs/figures/*
 
 outputs/predictions/*
 !outputs/predictions/.gitkeep
+.Rproj.user
