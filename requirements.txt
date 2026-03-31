@@ -1,0 +1,8 @@
+pandas
+numpy
+matplotlib
+seaborn
+statsmodels
+windrose
+jupyter
+nbformat
