@@ -1,148 +1,69 @@
-# 0. Cài đặt các thư viện cần thiết (nếu chưa có)
-# install.packages(c("tidyverse", "lubridate", "corrplot", "tseries", "forecast", "gridExtra"))
-
+# --- LOAD THƯ VIỆN ---
 library(tidyverse)
 library(lubridate)
-library(corrplot)
-library(tseries)
-library(forecast)
-library(gridExtra)
+library(zoo) # Hỗ trợ tính Rolling Window
 
-# 1. Load dữ liệu
-# Lưu ý: RStudio tự hiểu Working Directory nếu bạn mở theo Project
-df <- read.csv("C:/Users/TRAN ANH DUC/OneDrive/Máy tính/IS403_HCMC_Air_Quality/data/processed/hcmc_merged_cleaned.csv")
-# 2. Xử lý thời gian
+# --- BƯỚC 1: LOAD DỮ LIỆU ---
+df <- read.csv("hcmc_merged_cleaned.csv")
 df$datetime_local <- as.POSIXct(df$datetime_local, format="%Y-%m-%d %H:%M:%S")
 
-# Kiểm tra dữ liệu
-print("✅ Đã load dữ liệu thành công!")
-glimpse(df)
+# --- BƯỚC 2: DROP BIẾN (Theo yêu cầu "DROP hoàn toàn") ---
+df_clean <- df %>%
+  select(-c(pm1, um003)) %>% # Tránh Data Leakage & Đa cộng tuyến
+  # Drop các biến từ OpenAQ nếu có, ưu tiên OpenMeteo theo bảng
+  select(-any_of(c("temperature", "relativehumidity"))) 
 
-# 2.1. Check missing values
-print("--- Kiểm tra giá trị thiếu ---")
-colSums(is.na(df))
+# --- BƯỚC 3: TRANSFORMATIONS (Log & Math) ---
 
-# 2.2. Check Distribution & Outliers
-p1 <- ggplot(df, aes(x = pm25)) +
-  geom_histogram(aes(y = ..density..), bins = 50, fill = "teal", alpha = 0.6) +
-  geom_density(color = "red", size = 1) +
-  labs(title = "Phân phối nồng độ PM2.5", x = "PM2.5", y = "Mật độ") +
-  theme_minimal()
+# 1. Log Transformation (Cho pm25 và boundary_layer_height)
+# Dùng log1p để xử lý nồng độ thấp và ổn định phương sai
+df_clean$pm25_log <- log1p(df_clean$pm25)
+df_clean$blh_log <- log1p(df_clean$boundary_layer_height)
 
-p2 <- ggplot(df, aes(y = pm25)) +
-  geom_boxplot(fill = "coral", alpha = 0.7) +
-  labs(title = "Kiểm tra Outliers của PM2.5", y = "PM2.5") +
-  theme_minimal()
+# 2. Xử lý Áp suất: Tính Delta P (P_t - P_{t-3})
+df_clean <- df_clean %>%
+  mutate(delta_pressure = surface_pressure - lag(surface_pressure, 3))
 
-grid.arrange(p1, p2, ncol = 2)
+# --- BƯỚC 4: FEATURE CREATION (Mưa & Gió) ---
 
-# 2.3. Kiểm tra tính dừng (ADF Test)
-print("--- Kiểm định tính dừng (ADF Test) ---")
-adf_test <- adf.test(na.omit(df$pm25))
-print(adf_test)
-# Giải thích: p-value <= 0.05 là dữ liệu có tính dừng.
+# 1. Mưa (Zero-inflated): Tạo Flag is_raining
+df_clean <- df_clean %>%
+  mutate(is_raining = ifelse(precipitation > 0, 1, 0))
 
-#----------------------------------------------------------------------
-
-# 2.1. Check missing values
-print("--- Kiểm tra giá trị thiếu ---")
-colSums(is.na(df))
-
-# 2.2. Check Distribution & Outliers
-p1 <- ggplot(df, aes(x = pm25)) +
-  geom_histogram(aes(y = ..density..), bins = 50, fill = "teal", alpha = 0.6) +
-  geom_density(color = "red", size = 1) +
-  labs(title = "Phân phối nồng độ PM2.5", x = "PM2.5", y = "Mật độ") +
-  theme_minimal()
-
-p2 <- ggplot(df, aes(y = pm25)) +
-  geom_boxplot(fill = "coral", alpha = 0.7) +
-  labs(title = "Kiểm tra Outliers của PM2.5", y = "PM2.5") +
-  theme_minimal()
-
-grid.arrange(p1, p2, ncol = 2)
-
-# 2.3. Kiểm tra tính dừng (ADF Test)
-print("--- Kiểm định tính dừng (ADF Test) ---")
-adf_test <- adf.test(na.omit(df$pm25))
-print(adf_test)
-# Giải thích: p-value <= 0.05 là dữ liệu có tính dừng.
-
-#----------------------------------------------------------------------
-
-# 3.1. Numerical Correlation (Heatmap)
-# Chỉ chọn các cột số
-df_numeric <- df %>% select_if(is.numeric)
-cor_matrix <- cor(df_numeric, use = "complete.obs")
-
-corrplot(cor_matrix, method = "color", addCoef.col = "black", 
-         tl.col = "black", number.cex = 0.7,
-         title = "\nMa trận tương quan giữa các biến số", mar = c(0,0,1,0))
-
-# 3.2. PM2.5 theo Giờ trong ngày
-df$hour <- hour(df$datetime_local)
-
-df_hourly <- df %>%
-  group_by(hour) %>%
-  summarise(
-    mean_pm25 = mean(pm25, na.rm = TRUE),
-    sd_pm25 = sd(pm25, na.rm = TRUE),
-    n = n()
+# 2. Gió: Phân rã thành U-wind (Đông-Tây) và V-wind (Bắc-Nam)
+# Công thức: U = speed * cos(direction), V = speed * sin(direction)
+df_clean <- df_clean %>%
+  mutate(
+    u_wind = wind_speed_10m * cos(wind_direction_10m * pi / 180),
+    v_wind = wind_speed_10m * sin(wind_direction_10m * pi / 180)
   ) %>%
-  mutate(se = sd_pm25 / sqrt(n)) # Sai số chuẩn cho khoảng tin cậy
+  select(-wind_direction_10m) # DROP theo yêu cầu
 
-ggplot(df_hourly, aes(x = hour, y = mean_pm25)) +
-  geom_line(color = "red", size = 1) +
-  geom_point(color = "red") +
-  geom_ribbon(aes(ymin = mean_pm25 - 1.96*se, ymax = mean_pm25 + 1.96*se), 
-              fill = "red", alpha = 0.2) +
-  scale_x_continuous(breaks = 0:23) +
-  labs(title = "Xu hướng PM2.5 theo giờ (Trung bình & CI 95%)", x = "Giờ", y = "PM2.5 (µg/m³)") +
-  theme_minimal()
+# --- BƯỚC 5: CYCLICAL ENCODING (Cho Hour & Month) ---
+# Giúp mô hình hiểu được 23h đêm rất gần với 0h sáng
+df_clean <- df_clean %>%
+  mutate(
+    hour = hour(datetime_local),
+    month = month(datetime_local),
+    # Encoding Sin/Cos
+    hour_sin = sin(2 * pi * hour / 24),
+    hour_cos = cos(2 * pi * hour / 24),
+    month_sin = sin(2 * pi * month / 12),
+    month_cos = cos(2 * pi * month / 12)
+  )
 
-# 3.3. Tự tương quan (ACF/PACF)
-# Tạo đối tượng Time Series (tần suất 24h)
-ts_pm25 <- ts(df$pm25, frequency = 24)
-par(mfrow = c(1, 2))
-Acf(ts_pm25, main = "ACF PM2.5 (Lag 48h)", lag.max = 48)
-Pacf(ts_pm25, main = "PACF PM2.5 (Lag 48h)", lag.max = 48)
-par(mfrow = c(1, 1))
+# --- BƯỚC 6: LAG FEATURES & ROLLING WINDOW ---
+df_final <- df_clean %>%
+  mutate(
+    # Lag Features (t-1, t-2, t-24)
+    pm25_lag1 = lag(pm25, 1),
+    pm25_lag2 = lag(pm25, 2),
+    pm25_lag24 = lag(pm25, 24),
+    # Rolling Window (Mean 6h, 12h)
+    pm25_roll_6h = rollmean(pm25, k = 6, fill = NA, align = "right"),
+    pm25_roll_12h = rollmean(pm25, k = 12, fill = NA, align = "right")
+  ) %>%
+  drop_na() # Loại bỏ các dòng NA tạo ra do Lag
 
-#----------------------------------------------------------------------
-
-# 4.1. Heatmap Giờ vs Thứ
-df$day_name <- wday(df$datetime_local, label = TRUE, abbr = FALSE, week_start = 1)
-
-df_heatmap <- df %>%
-  group_by(day_name, hour) %>%
-  summarise(avg_pm25 = mean(pm25, na.rm = TRUE))
-
-ggplot(df_heatmap, aes(x = hour, y = day_name, fill = avg_pm25)) +
-  geom_tile() +
-  scale_fill_gradient(low = "yellow", high = "red") +
-  labs(title = "Cường độ ô nhiễm: Giờ vs Thứ trong tuần", x = "Giờ trong ngày", y = "Thứ", fill = "PM2.5") +
-  theme_minimal()
-
-# 4.2. Phân rã chuỗi thời gian (Decomposition)
-decomp <- stl(ts_pm25, s.window = "periodic")
-plot(decomp, main = "Phân rã chuỗi thời gian PM2.5")
-
-# 4.3. Check Class Balance (AQI)
-df <- df %>%
-  mutate(aqi_label = case_when(
-    pm25 <= 15 ~ "Tốt",
-    pm25 <= 35 ~ "Trung bình",
-    pm25 <= 55 ~ "Kém",
-    TRUE ~ "Xấu/Rất xấu"
-  ))
-
-df_aqi_count <- df %>%
-  count(aqi_label) %>%
-  mutate(prop = n / sum(n) * 100)
-
-ggplot(df_aqi_count, aes(x = "", y = prop, fill = aqi_label)) +
-  geom_bar(stat = "identity", width = 1) +
-  coord_polar("y", start = 0) +
-  labs(title = "Tỷ lệ các mức độ chất lượng không khí") +
-  theme_void() +
-  scale_fill_manual(values = c("Tốt"="lightgreen", "Trung bình"="gold", "Kém"="orange", "Xấu/Rất xấu"="red"))
+# Xuất file chuẩn bị cho Model
+# write.csv(df_final, "hcmc_preprocessed_ready.csv", row.names = FALSE)
