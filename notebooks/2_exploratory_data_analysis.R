@@ -7,8 +7,7 @@ library(forecast)
 
 # --- BƯỚC 1: LOAD DỮ LIỆU ---
 # Lưu ý: Thay đổi đường dẫn tuyệt đối cho đúng với máy mỗi người
-df <- read.csv("C:.../hcmc_merged_cleaned.csv")
-
+df <- read.csv("C:/Users/bao03/qbao_R/IS403_HCMC_Air_Quality/data/processed/hcmc_merged_cleaned.csv")
 # Chuyển cột thời gian về định dạng chuẩn R
 df$datetime_local <- as.POSIXct(df$datetime_local, format="%Y-%m-%d %H:%M:%S")
 
@@ -23,9 +22,9 @@ plot_list <- list()
 
 for (col in all_features) {
   # Biểu đồ phân phối (Histogram)
-  p1 <- ggplot(df, aes(x = .data[[col]])) +
-    geom_histogram(fill = "teal", color = "white", bins = 30) +
-    labs(title = paste("Distribution of", col)) + theme_minimal()
+p1 <- ggplot(df, aes(x = .data[[col]])) +
+  geom_histogram(fill = "#008080", color = "white", bins = 30) + # Mã Hex của màu Teal
+  labs(title = paste("Distribution of", col)) + theme_minimal()
   
   # Biểu đồ ngoại lai (Boxplot)
   p2 <- ggplot(df, aes(y = .data[[col]])) +
