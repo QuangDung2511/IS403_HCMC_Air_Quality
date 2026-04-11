@@ -10,3 +10,5 @@ statsmodels
 windrose
 jupyter
 nbformat
+pmdarima
+torch
