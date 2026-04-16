@@ -1,0 +1,149 @@
+\documentclass[12pt, a4paper]{report}
+
+% --- Packages ---
+\usepackage{fontspec} 
+\setmainfont{Times New Roman}
+\usepackage{amsmath, amssymb, amsfonts, mathtools}
+\usepackage{geometry}
+\geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=2cm}
+\usepackage{setspace}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{multicol}
+\usepackage{tabularx}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{indentfirst}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{emoji}
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue]{hyperref}
+
+% Captions
+\usepackage{longtable}
+\usepackage{caption}
+% Hyperlinks and references
+\usepackage{url}
+\usepackage{cleveref}
+\usepackage{tcolorbox}
+\usepackage{lmodern}
+\usepackage{array}
+\newtcolorbox[auto counter, number within=chapter]{Python}[2][]{colframe=blue!50!black, colback=blue!10!white, coltitle=black, fonttitle=\bfseries, title=Python Code: #2, #1}
+\newcommand{\HRule}{\rule{\linewidth}{1pt}}
+
+\begin{document}
+
+% --- Thay đổi margin tạm thời để trang bìa nằm ở giữa giấy ---
+\newgeometry{top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm}
+
+% --- TITLE PAGE ---
+\begin{titlepage}
+    \centering
+    \vspace*{0.5cm}
+    {\large \textbf{ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}}\\[0.5cm]
+    {\large \textbf{TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN}}\\[1.5cm]
+    
+    % Bỏ comment dòng dưới nếu có logo
+    \includegraphics[scale=0.7]{report/logo-uit.png}\\[1.5cm] 
+    
+    {\Large \textbf{KHOA HỆ THỐNG THÔNG TIN}}\\[0.5cm]
+    {\large \textbf{IS403 - PHÂN TÍCH DỮ LIỆU KINH DOANH}}\\[1cm]
+
+    \HRule \\[0.4cm]
+    \makebox[\textwidth][c]{\textbf{\large ĐỒ ÁN:}}\\[0.3cm]
+    \textbf{\Large PHÂN TÍCH VÀ DỰ BÁO CHẤT LƯỢNG KHÔNG KHÍ (PM2.5) TẠI TP.HCM}\\[0.2cm]
+    \HRule \\[1.5cm]
+    
+    % --- STUDENT AND INSTRUCTOR SIDE-BY-SIDE LAYOUT ---
+    \vspace{0.5cm}
+    \noindent
+    \begin{minipage}[t]{0.62\textwidth} % <-- Increased from 0.55 to 0.62
+        \large
+        \textbf{Nhóm sinh viên thực hiện:}\\[0.2cm]
+        \normalsize
+        1. Nguyễn Quang Dũng - 23520335 (Nhóm trưởng)\\[0.1cm]
+        2. Trần Nguyễn Tiến Đức - 23520322\\[0.1cm]
+        3. Trần Anh Đức - 23520316\\[0.1cm]
+        4. Trần Quốc Bảo - 23520143
+    \end{minipage}%
+    \begin{minipage}[t]{0.38\textwidth} % <-- Decreased from 0.45 to 0.38
+        \large
+        \centering
+        \textbf{Giảng viên hướng dẫn:}\\[0.2cm]
+        \normalsize
+        Dr. Trần Văn Hải Triều
+    \end{minipage}
+    
+    \vfill
+    {\large TP. Hồ Chí Minh, 2024}
+\end{titlepage}
+
+% --- Khôi phục lại margin ban đầu (trái 3cm) để đóng gáy ---
+\restoregeometry
+
+\newpage
+\pagenumbering{roman}
+\renewcommand{\contentsname}{Mục lục}
+\tableofcontents
+\newpage
+
+\pagenumbering{arabic}
+
+% -- CHƯƠNG 1
+\chapter{GIỚI THIỆU BÀI TOÁN}
+\section{Tính cấp thiết của đề tài}
+\section{Mục tiêu nghiên cứu}
+\section{Phạm vi nghiên cứu}
+
+% -- CHƯƠNG 2
+\chapter{CƠ SỞ LÝ THUYẾT}
+\section{Các yếu tố khí tượng ảnh hưởng đến PM2.5}
+\section{Ứng dụng học máy trong dự báo chất lượng không khí}
+
+% -- CHƯƠNG 3
+\chapter{DỮ LIỆU VÀ QUY TRÌNH PHÂN TÍCH}
+\section{Dữ liệu thô (Raw Data)}
+\section{Làm sạch dữ liệu cơ bản (Basic Cleaning)}
+\section{Phân tích khám phá (EDA - Train Only)}
+\section{Tiền xử lý dữ liệu (Preprocessing)}
+\subsection{Kỹ thuật đặc trưng (Feature Engineering)}
+\subsection{Phân chia dữ liệu (Train/Val/Test Split)}
+\subsection{Lọc và Phân tích tương quan đặc trưng (Feature Selection)}
+\subsection{Chuẩn hóa cuối cùng (Scaling \& Formatting)}
+
+% -- CHƯƠNG 4
+\chapter{HUẤN LUYỆN MÔ HÌNH (MODEL TRAINING)}
+\section{Thiết lập mô hình cơ sở (Baseline Models)}
+% Trình bày việc khởi tạo SARIMA, XGBoost, LightGBM, LSTM, GRU với các tham số mặc định.
+\section{Chiến lược Tối ưu hóa Siêu tham số (Tuning Strategy)}
+% Không ghi kết quả ở đây. Ở đây chỉ trình bày BẠN ĐÃ TÌM KIẾM THAM SỐ NHƯ THẾ NÀO (Dùng GridSearch, Random, hay Optuna? Search space cho Learning rate/Tree depth là bao nhiêu?).
+
+% -- CHƯƠNG 5
+\chapter{ĐÁNH GIÁ VÀ TỐI ƯU HÓA KẾT QUẢ (EVALUATION \& OPTIMIZATION)}
+\section{Đánh giá Hiệu năng Baseline (Baseline Evaluation)}
+% Đưa kết quả mô hình chưa Tune vào đây. Nhận xét sơ bộ.
+\section{Kết quả sau Tối ưu hóa (Tuned Models Performance)}
+% So sánh Before - After. Đưa bảng kết quả cuối cùng vào đây và kết luận mô hình Vô địch.
+\section{Mức độ quan trọng của đặc trưng (Feature Importance Analysis)}
+\section{Hiện tượng chênh/trễ dự báo (Lagged-Prediction Impact)}
+
+% -- CHƯƠNG 6
+\chapter{KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN}
+\section{Kết luận chung}
+\section{Hạn chế của đề tài}
+\section{Hướng phát triển tương lai}
+
+\newpage
+\renewcommand{\bibname}{Tài liệu tham khảo}
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
