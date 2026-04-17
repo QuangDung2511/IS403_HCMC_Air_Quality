@@ -1,0 +1,9 @@
+{
+  "generated_at_utc": "2026-04-17 06:41:34 UTC",
+  "source_splits": "modeling_fs/train_tree.csv, val_tree.csv, test_tree.csv",
+  "target_original": "target_pm25_h24",
+  "target_transformed": "target_pm25_h24_log",
+  "log1p_feature_columns": ["pm25", "pm25_lag_1", "pm25_roll_72h_mean", "pm25_roll_6h_mean", "pm25_lag_24", "pm25_lag_48", "pm25_lag_72", "pm25_roll_12h_std", "pm25_roll_72h_std", "pm25_roll_48h_std", "pm25_roll_24h_mean", "pm25_roll_48h_mean", "pm25_roll_24h_std", "pm25_lag_12", "pm25_lag_2"],
+  "scaler": "Base R scale() (center & scale vectors)",
+  "inverse_target": "expm1(target_pm25_h24_log)"
+}

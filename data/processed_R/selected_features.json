@@ -1,0 +1,54 @@
+{
+  "generated_at_utc": "2026-04-06T04:37:57.280247+00:00",
+  "source_file": "../data/processed/train_split.csv",
+  "forecast_horizon_hours": 24,
+  "top_k": 25,
+  "eda_dropped_columns": [
+    "pm1",
+    "um003",
+    "temperature",
+    "relativehumidity",
+    "wind_direction_10m"
+  ],
+  "force_include_pacf_lags": true,
+  "forced_lag_features": [
+    "pm25_lag_2"
+  ],
+  "models": {
+    "random_forest": "sklearn.ensemble.RandomForestRegressor(n_estimators=200, max_depth=20, n_jobs=2)",
+    "xgboost": "xgboost.XGBRegressor(n_estimators=200, max_depth=6, tree_method=hist, n_jobs=2)"
+  },
+  "split_sizes": {
+    "train": 6383,
+    "val": 2128,
+    "test": 2128
+  },
+  "selected_features": [
+    "month",
+    "month_cos",
+    "pm25",
+    "pm25_lag_1",
+    "hours_since_last_rain",
+    "pm25_roll_72h_mean",
+    "pm25_roll_6h_mean",
+    "pm25_lag_24",
+    "pm25_lag_48",
+    "pm25_lag_72",
+    "pm25_roll_12h_std",
+    "wind_u",
+    "pm25_roll_72h_std",
+    "surface_pressure",
+    "wind_v",
+    "pm25_roll_48h_std",
+    "pm25_roll_24h_mean",
+    "pm25_roll_48h_mean",
+    "day_of_week",
+    "hour_cos",
+    "is_dry_season",
+    "temperature_2m",
+    "relative_humidity_2m",
+    "pm25_roll_24h_std",
+    "pm25_lag_12",
+    "pm25_lag_2"
+  ]
+}
