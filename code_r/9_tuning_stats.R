@@ -1,33 +1,37 @@
-# --------------------------------------------------------------------=
-# PHASE 1: TINH CHỈNH TRỌNG SỐ MÔ HÌNH THỐNG KÊ (ARIMA Family) - R VERSION
-# --------------------------------------------------------------------=
+# =====================================================================
+# BƯỚC 9: TINH CHỈNH TRỌNG SỐ MÔ HÌNH THỐNG KÊ (ARIMA Family)
+# =====================================================================
 # Mục tiêu: Tìm ra cấu hình tốt nhất cho ARIMA, SARIMA, ARIMAX, SARIMAX.
-# Các bước thực hiện:
 # 1. Lựa chọn Biến Ngoại sinh: Spearman Correlation & Granger Causality.
 # 2. Kiểm tra Tính dừng: Augmented Dickey-Fuller (ADF) Test.
-# 3. Auto-ARIMA: Thuật toán Stepwise tối ưu hóa AIC.
-# 4. Kiểm định phần dư (Residual Diagnostics): Ljung-Box Test.
-# 5. Lưu kết quả: Xuất file .rds phục vụ Ensemble/Hybrid.
+# 3. Auto-ARIMA: Dùng thuật toán Stepwise dựa trên AIC.
+# 4. Lưu kết quả: Xuất mảng dự báo ra file .rds
 
-# --------------------------------------------------------------------=
-# NẠP THƯ VIỆN
-# --------------------------------------------------------------------=
+# Nạp thư viện
 library(tidyverse)
 library(forecast)
-library(tseries) # Dùng cho ADF Test
-library(lmtest)  # Dùng cho Granger Causality Test
+library(tseries)  
+library(lmtest)  
+library(Metrics)
 
-print("Đã nạp toàn bộ thư viện thành công!")
+# ---------------------------------------------------------
+# CẤU HÌNH ĐƯỜNG DẪN
+# ---------------------------------------------------------
+base_dir <- "C:/Users/TRAN ANH DUC/OneDrive/Máy tính/IS403_HCMC_Air_Quality"
+in_fs_dir <- paste0(base_dir, "/data/processed/modeling_fs/")
+pred_dir  <- paste0(base_dir, "/outputs_R/predictions/")
 
-# --------------------------------------------------------------------=
-# HÀM ĐÁNH GIÁ (Regression Metrics - Đảo ngược Logarit)
-# --------------------------------------------------------------------=
+if (!dir.exists(pred_dir)) dir.create(pred_dir, recursive = TRUE)
+
+TARGET_LOG <- "target_pm25_h24_log"
+
+# Hàm đánh giá Metrics (Inverse Log về µg/m³)
 regression_metrics <- function(y_true, y_pred) {
   y_true_inv <- expm1(y_true)
   y_pred_inv <- expm1(y_pred)
   
   rmse_val <- sqrt(mean((y_true_inv - y_pred_inv)^2))
-  mae_val <- mean(abs(y_true_inv - y_pred_inv))
+  mae_val  <- mean(abs(y_true_inv - y_pred_inv))
   
   eps <- 1e-6
   mask <- abs(y_true_inv) > eps
@@ -36,59 +40,61 @@ regression_metrics <- function(y_true, y_pred) {
   return(c(RMSE = rmse_val, MAE = mae_val, MAPE = mape_val))
 }
 
-# --------------------------------------------------------------------=
-# LOAD & CHUẨN BỊ DỮ LIỆU
-# --------------------------------------------------------------------=
-folder_path <- "C:/Users/TRAN ANH DUC/OneDrive/Máy tính/IS403_HCMC_Air_Quality/data/processed/modeling_fs/"
+# ---------------------------------------------------------
+# ĐỌC DỮ LIỆU
+# ---------------------------------------------------------
+cat("Đang nạp dữ liệu...\n")
+train_df <- read_csv(paste0(in_fs_dir, "train_dl.csv"), show_col_types = FALSE) %>% drop_na(all_of(TARGET_LOG))
+val_df   <- read_csv(paste0(in_fs_dir, "val_dl.csv"), show_col_types = FALSE) %>% drop_na(all_of(TARGET_LOG))
+test_df  <- read_csv(paste0(in_fs_dir, "test_dl.csv"), show_col_types = FALSE) %>% drop_na(all_of(TARGET_LOG))
 
-train_df <- read.csv(paste0(folder_path, "train_dl.csv"))
-val_df   <- read.csv(paste0(folder_path, "val_dl.csv"))
-test_df  <- read.csv(paste0(folder_path, "test_dl.csv"))
+feature_cols <- setdiff(colnames(train_df), c("datetime_local", TARGET_LOG))
 
-train_y <- train_df$target_pm25_h24_log
-val_y   <- val_df$target_pm25_h24_log
-test_y  <- test_df$target_pm25_h24_log
+X_train <- train_df[, feature_cols]
+y_train <- train_df[[TARGET_LOG]]
 
-ts_train <- ts(train_y, frequency = 24)
+X_val <- val_df[, feature_cols]
+y_val <- val_df[[TARGET_LOG]]
 
-cat(sprintf("Train shapes: N=%d\nVal shapes: N=%d\nTest shapes: N=%d\n", 
-            nrow(train_df), nrow(val_df), nrow(test_df)))
+X_test <- test_df[, feature_cols]
+y_test <- test_df[[TARGET_LOG]]
 
-# --------------------------------------------------------------------=
-# 1. EXOGENOUS FEATURE SELECTION (Dành cho ARIMAX & SARIMAX)
-# --------------------------------------------------------------------=
-print(" BƯỚC 1: Đang lọc biến ngoại sinh...")
+# Tạo đối tượng Time-Series cho tập Train với chu kỳ 1 ngày (24 giờ)
+ts_train_y <- ts(y_train, frequency = 24)
 
-# 1.1 Spearman Correlation
-all_cols <- colnames(train_df)
-feature_cols <- all_cols[!grepl("pm25|datetime_local|target", all_cols)]
+# =====================================================================
+# 1. EXOGENOUS FEATURE SELECTION (Lọc biến ngoại sinh)
+# =====================================================================
+cat("\n--- 1.1 Spearman Correlation ---\n")
+# Tính tương quan Spearman cho các biến không chứa chuỗi "pm25"
+exog_candidates <- feature_cols[!grepl("pm25", feature_cols)]
+spearman_res <- data.frame(Feature = character(), Spearman_Abs = numeric())
 
-spearman_results <- data.frame(Feature = character(), Correlation = numeric())
-
-for (col in feature_cols) {
-  corr_val <- cor(train_df[[col]], train_y, method = "spearman")
-  spearman_results <- rbind(spearman_results, data.frame(Feature = col, Correlation = abs(corr_val)))
+for (col in exog_candidates) {
+  corr <- cor(X_train[[col]], y_train, method = "spearman")
+  spearman_res <- rbind(spearman_res, data.frame(Feature = col, Spearman_Abs = abs(corr)))
 }
 
-# Sắp xếp và lấy Top 5
-spearman_results <- spearman_results[order(-spearman_results$Correlation), ]
-top_candidates <- head(spearman_results$Feature, 5)
+spearman_res <- spearman_res %>% arrange(desc(Spearman_Abs))
+print(head(spearman_res, 10))
 
-print("=> Top 5 biến (Spearman):")
-print(top_candidates)
+top_candidates <- head(spearman_res$Feature, 5)
+cat("\n=> Top 5 ứng viên:", paste(top_candidates, collapse = ", "), "\n")
 
-# 1.2 Granger Causality Test (Thử độ trễ lag = c(1, 6, 12, 24))
+cat("\n--- 1.2 Granger Causality Test ---\n")
 selected_exog <- c()
-print("--- Kết quả Granger Causality (Tìm p-value < 0.05) ---")
 
 for (col in top_candidates) {
   has_causality <- FALSE
-  # Thử nghiệm qua các lag để xem có quan hệ nhân quả không
-  for (l in c(1, 6, 12, 24)) {
+  cat(sprintf("Thử nghiệm: %s -> PM2.5\n", col))
+  
+  # Thử các độ trễ 1, 6, 12, 24 giờ
+  for (lag in c(1, 6, 12, 24)) {
     tryCatch({
-      # grangertest yêu cầu biến (Y ~ X)
-      gc_res <- grangertest(train_y ~ train_df[[col]], order = l)
-      p_val <- gc_res$`Pr(>F)`[2]
+      # grangertest yêu cầu công thức y ~ x
+      gc_test <- grangertest(y_train ~ X_train[[col]], order = lag)
+      p_val <- gc_test$`Pr(>F)`[2] # Lấy p-value của dòng số 2
+      
       if (!is.na(p_val) && p_val < 0.05) {
         has_causality <- TRUE
       }
@@ -103,105 +109,84 @@ for (col in top_candidates) {
   }
 }
 
-print("=> Các biến ngoại sinh chính thức được nạp vào mô hình:")
-print(selected_exog)
+cat("\n=> Các biến ngoại sinh chính thức được chọn:", paste(selected_exog, collapse = ", "), "\n")
 
-# Trích xuất ma trận Exogenous
-train_exog <- as.matrix(sapply(train_df[, selected_exog], as.numeric))
-val_exog   <- as.matrix(sapply(val_df[, selected_exog], as.numeric))
-test_exog  <- as.matrix(sapply(test_df[, selected_exog], as.numeric))
+# Trích xuất ma trận biến ngoại sinh
+train_exog <- as.matrix(X_train[, selected_exog])
+val_exog   <- as.matrix(X_val[, selected_exog])
+test_exog  <- as.matrix(X_test[, selected_exog])
 
-# --------------------------------------------------------------------=
-# 2. KIỂM ĐỊNH TÍNH DỪNG - Augmented Dickey-Fuller (ADF)
-# --------------------------------------------------------------------=
-print("\n BƯỚC 2: Kiểm định tính dừng (ADF Test)...")
-adf_res <- adf.test(ts_train, alternative = "stationary")
+# =====================================================================
+# 2. KIỂM ĐỊNH TÍNH DỪNG (ADF TEST)
+# =====================================================================
+cat("\n--- 2. ADF Test ---\n")
+adf_res <- adf.test(ts_train_y, alternative = "stationary")
 print(adf_res)
 
 if (adf_res$p.value < 0.05) {
-  print("=> p-value < 0.05: Bác bỏ H0. Chuỗi LÀ DỪNG (Stationary). Có thể xét d=0.")
+  cat("p-value < 0.05 => Chuỗi dữ liệu LÀ DỪNG (Stationary). Ta có thể xét d=0.\n")
 } else {
-  print("=> p-value >= 0.05: Không thể bác bỏ H0. Chuỗi KHÔNG DỪNG. Cần differencing (d>0).")
+  cat("p-value >= 0.05 => Chuỗi dữ liệu LÀ KHÔNG DỪNG (Non-Stationary). Cần d>0.\n")
 }
 
-# --------------------------------------------------------------------=
-# 3. AUTO-ARIMA TUNING & DIAGNOSTICS (Stepwise = TRUE để chạy nhanh)
-# --------------------------------------------------------------------=
-print("\n BƯỚC 3: Dò tìm tham số tự động (Hyperparameter Tuning)...")
+# =====================================================================
+# 3. AUTO-ARIMA & RESIDUAL DIAGNOSTICS
+# =====================================================================
+predictions_dict <- list()
 
-# Khởi tạo list để lưu kết quả dự báo
-preds_train <- list()
-preds_val   <- list()
-preds_test  <- list()
+# --- 3.1 ARIMA (Non-Seasonal, No Exog) ---
+cat("\n--- Tuning ARIMA ---\n")
+model_arima <- auto.arima(ts_train_y, seasonal = FALSE, trace = TRUE, stepwise = TRUE, max.p = 3, max.q = 3)
 
-# ---------------------------------------------------------
-# [1] ARIMA (Non-Seasonal, No Exog)
-# ---------------------------------------------------------
-print("--- Tuning ARIMA ---")
-model_arima <- auto.arima(ts_train, seasonal = FALSE, trace = TRUE, stepwise = TRUE, max.p = 3, max.q = 3)
-
-# Ljung-Box Test (Kiểm tra phần dư có phải nhiễu trắng không)
+# Ljung-Box Test cho ARIMA
 lb_arima <- Box.test(model_arima$residuals, lag = 24, type = "Ljung-Box")
-cat(sprintf("=> Ljung-Box p-value (ARIMA): %f\n", lb_arima$p.value))
+cat(sprintf("Ljung-Box p-value (ARIMA): %f\n", lb_arima$p.value))
 
-# Dự báo trượt (Rolling 1-step Ahead)
-test_arima_model <- Arima(test_y, model = model_arima)
-preds_test[["ARIMA"]] <- as.numeric(fitted(test_arima_model))
+# Dự báo trượt (Rolling 1-step ahead) trên Val và Test
+predictions_dict[["ARIMA_train"]] <- as.numeric(fitted(model_arima))
+predictions_dict[["ARIMA_val"]]   <- as.numeric(fitted(Arima(y_val, model = model_arima)))
+predictions_dict[["ARIMA_test"]]  <- as.numeric(fitted(Arima(y_test, model = model_arima)))
 
+# --- 3.2 ARIMAX (Non-Seasonal, With Exog) ---
+cat("\n--- Tuning ARIMAX ---\n")
+model_arimax <- auto.arima(ts_train_y, xreg = train_exog, seasonal = FALSE, trace = TRUE, stepwise = TRUE, max.p = 3, max.q = 3)
 
-# ---------------------------------------------------------
-# [2] ARIMAX (Non-Seasonal, With Exog)
-# ---------------------------------------------------------
-print("--- Tuning ARIMAX ---")
-model_arimax <- auto.arima(ts_train, xreg = train_exog, seasonal = FALSE, trace = TRUE, stepwise = TRUE, max.p = 3, max.q = 3)
+predictions_dict[["ARIMAX_train"]] <- as.numeric(fitted(model_arimax))
+predictions_dict[["ARIMAX_val"]]   <- as.numeric(fitted(Arima(y_val, model = model_arimax, xreg = val_exog)))
+predictions_dict[["ARIMAX_test"]]  <- as.numeric(fitted(Arima(y_test, model = model_arimax, xreg = test_exog)))
 
-test_arimax_model <- Arima(test_y, model = model_arimax, xreg = test_exog)
-preds_test[["ARIMAX"]] <- as.numeric(fitted(test_arimax_model))
+# --- 3.3 SARIMA (Seasonal m=24, No Exog) ---
+cat("\n--- Tuning SARIMA ---\n")
+model_sarima <- auto.arima(ts_train_y, seasonal = TRUE, trace = TRUE, stepwise = TRUE, max.p = 2, max.q = 2, max.P = 1, max.Q = 1)
 
+predictions_dict[["SARIMA_train"]] <- as.numeric(fitted(model_sarima))
+predictions_dict[["SARIMA_val"]]   <- as.numeric(fitted(Arima(y_val, model = model_sarima)))
+predictions_dict[["SARIMA_test"]]  <- as.numeric(fitted(Arima(y_test, model = model_sarima)))
 
-# ---------------------------------------------------------
-# [3] SARIMA (Seasonal m=24, No Exog)
-# ---------------------------------------------------------
-print("--- Tuning SARIMA ---")
-model_sarima <- auto.arima(ts_train, seasonal = TRUE, trace = TRUE, stepwise = TRUE, max.p = 2, max.q = 2, max.P = 1, max.Q = 1)
+# --- 3.4 SARIMAX (Seasonal m=24, With Exog) ---
+cat("\n--- Tuning SARIMAX ---\n")
+model_sarimax <- auto.arima(ts_train_y, xreg = train_exog, seasonal = TRUE, trace = TRUE, stepwise = TRUE, max.p = 2, max.q = 2, max.P = 1, max.Q = 1)
 
-test_sarima_model <- Arima(test_y, model = model_sarima)
-preds_test[["SARIMA"]] <- as.numeric(fitted(test_sarima_model))
+predictions_dict[["SARIMAX_train"]] <- as.numeric(fitted(model_sarimax))
+predictions_dict[["SARIMAX_val"]]   <- as.numeric(fitted(Arima(y_val, model = model_sarimax, xreg = val_exog)))
+predictions_dict[["SARIMAX_test"]]  <- as.numeric(fitted(Arima(y_test, model = model_sarimax, xreg = test_exog)))
 
+# =====================================================================
+# 4. LEADERBOARD NHÓM THỐNG KÊ & XUẤT FILE
+# =====================================================================
+cat("\n --- LEADERBOARD BẢN TUNED TRÊN TEST-SET ---\n")
 
-# ---------------------------------------------------------
-# [4] SARIMAX (Seasonal m=24, With Exog)
-# ---------------------------------------------------------
-print("--- Tuning SARIMAX ---")
-model_sarimax <- auto.arima(ts_train, xreg = train_exog, seasonal = TRUE, trace = TRUE, stepwise = TRUE, max.p = 2, max.q = 2, max.P = 1, max.Q = 1)
+model_names <- c("ARIMA", "ARIMAX", "SARIMA", "SARIMAX")
+results <- data.frame()
 
-test_sarimax_model <- Arima(test_y, model = model_sarimax, xreg = test_exog)
-preds_test[["SARIMAX"]] <- as.numeric(fitted(test_sarimax_model))
+for (m in model_names) {
+  res_te <- regression_metrics(y_test, predictions_dict[[paste0(m, "_test")]])
+  results <- rbind(results, data.frame(Model = m, RMSE = res_te["RMSE"], MAE = res_te["MAE"], MAPE = res_te["MAPE"]))
+}
 
+results[,-1] <- round(results[,-1], 4)
+print(results)
 
-# --------------------------------------------------------------------=
-# 4. LEADERBOARD & LƯU XUẤT 
-# --------------------------------------------------------------------=
-print("\n --- LEADERBOARD BẢN TUNED TRÊN TEST-SET ---")
-
-res_arima   <- regression_metrics(test_y, preds_test[["ARIMA"]])
-res_sarima  <- regression_metrics(test_y, preds_test[["SARIMA"]])
-res_arimax  <- regression_metrics(test_y, preds_test[["ARIMAX"]])
-res_sarimax <- regression_metrics(test_y, preds_test[["SARIMAX"]])
-
-metric_df <- data.frame(
-  Model = c("ARIMA", "SARIMA", "ARIMAX", "SARIMAX"),
-  RMSE = c(res_arima["RMSE"], res_sarima["RMSE"], res_arimax["RMSE"], res_sarimax["RMSE"]),
-  MAE  = c(res_arima["MAE"], res_sarima["MAE"], res_arimax["MAE"], res_sarimax["MAE"]),
-  MAPE = c(res_arima["MAPE"], res_sarima["MAPE"], res_arimax["MAPE"], res_sarimax["MAPE"])
-)
-
-metric_df[,-1] <- round(metric_df[,-1], 4)
-print(metric_df)
-
-# XUẤT FILE .RDS (Tương đương với xuất Pickle bên Python)
-out_dir <- "C:/Users/TRAN ANH DUC/OneDrive/Máy tính/IS403_HCMC_Air_Quality/outputs/predictions/"
-dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-
-saveRDS(preds_test, paste0(out_dir, "tuned_stats_preds.rds"))
-print(paste("Đã lưu kết quả dự báo 1-Step-Ahead vào:", paste0(out_dir, "tuned_stats_preds.rds")))
+# Đóng gói và lưu mảng dự báo ra định dạng .rds (Tương đương .pkl của Python)
+saveRDS(predictions_dict, paste0(pred_dir, "tuned_stats_preds.rds"))
+cat("\n Đã lưu kết quả dự báo của hệ thống Stats-Models tại:", paste0(pred_dir, "tuned_stats_preds.rds\n"))
