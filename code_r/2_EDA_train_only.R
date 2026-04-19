@@ -17,11 +17,18 @@ print("✅ Đã nạp thư viện thành công!")
 # --------------------------------------------------------------------=
 # 2. ĐỊNH NGHĨA ĐƯỜNG DẪN (Cấu trúc thư mục luồng R)
 # --------------------------------------------------------------------=
+# Lấy thư mục gốc của project (thư mục cha của code_r/)
+script_dir <- tryCatch(
+  dirname(normalizePath(sys.frame(1)$ofile)),
+  error = function(e) dirname(normalizePath(rstudioapi::getActiveDocumentContext()$path))
+)
+PROJECT_ROOT <- normalizePath(file.path(script_dir, ".."), winslash = "/")
+
 # Đường dẫn tập Train đã được chia (Lấy từ folder processed_R)
-data_path <- "C:/Users/TRAN ANH DUC/OneDrive/Máy tính/IS403_HCMC_Air_Quality/data/processed_R/train_split.csv"
+data_path <- file.path(PROJECT_ROOT, "data/processed_R/train_split.csv")
 
 # Thư mục lưu trữ hình ảnh (Lưu vào outputs_R)
-fig_dir <- "C:/Users/TRAN ANH DUC/OneDrive/Máy tính/IS403_HCMC_Air_Quality/outputs_R/figures/"
+fig_dir <- file.path(PROJECT_ROOT, "outputs_R/figures/")
 
 # Đảm bảo thư mục lưu hình ảnh tồn tại
 if (!dir.exists(fig_dir)) {

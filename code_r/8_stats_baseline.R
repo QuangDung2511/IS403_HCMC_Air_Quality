@@ -17,11 +17,27 @@ set.seed(42)
 torch_manual_seed(42)
 
 # ---------------------------------------------------------
-# CẤU HÌNH ĐƯỜNG DẪN
+# CẤU HÌNH ĐƯỜNG DẪN (động, không hard-code)
 # ---------------------------------------------------------
-base_dir <- "C:/Users/TRAN ANH DUC/OneDrive/Máy tính/IS403_HCMC_Air_Quality"
-in_fs_dir <- paste0(base_dir, "/data/processed/modeling_fs/")
-fig_dir   <- paste0(base_dir, "/outputs_R/figures/")
+# Tự động xác định thư mục script (Hỗ trợ cả RStudio và Rscript CLI)
+get_script_path <- function() {
+  cmd_args <- commandArgs(trailingOnly = FALSE)
+  file_arg <- "--file="
+  match <- grep(file_arg, cmd_args)
+  if (length(match) > 0) {
+    return(dirname(normalizePath(sub(file_arg, "", cmd_args[match]))))
+  } else {
+    return(dirname(normalizePath(rstudioapi::getActiveDocumentContext()$path)))
+  }
+}
+script_dir <- tryCatch(get_script_path(), error = function(e) getwd())
+cat(sprintf("Script directory: %s\n", script_dir))
+cat(sprintf("Working directory: %s\n", getwd()))
+PROJECT_ROOT <- normalizePath(file.path(script_dir, ".."), winslash = "/")
+
+# Đọc từ thư mục R của chính mình (processed_R/modeling_fs/)
+in_fs_dir <- file.path(PROJECT_ROOT, "data/processed_R/modeling_fs/")
+fig_dir   <- file.path(PROJECT_ROOT, "outputs_R/figures/")
 
 if (!dir.exists(fig_dir)) dir.create(fig_dir, recursive = TRUE)
 
@@ -34,13 +50,13 @@ regression_metrics <- function(y_true, y_pred) {
   # Hoàn tác Log (expm1) để tính sai số trên thang gốc
   y_true_inv <- expm1(y_true)
   y_pred_inv <- expm1(y_pred)
-  
+
   rmse <- sqrt(mean((y_true_inv - y_pred_inv)^2))
   mae  <- mean(abs(y_true_inv - y_pred_inv))
   eps  <- 1e-6
   mask <- abs(y_true_inv) > eps
   mape <- mean(abs((y_true_inv[mask] - y_pred_inv[mask]) / y_true_inv[mask])) * 100
-  
+
   return(c(RMSE = rmse, MAE = mae, MAPE = mape))
 }
 
@@ -48,9 +64,9 @@ regression_metrics <- function(y_true, y_pred) {
 # 1. ĐỌC DỮ LIỆU
 # ---------------------------------------------------------
 cat(" Đang nạp dữ liệu...\n")
-train_df <- read_csv(paste0(in_fs_dir, "train_dl.csv"), show_col_types = FALSE) %>% drop_na(all_of(TARGET_LOG))
-val_df   <- read_csv(paste0(in_fs_dir, "val_dl.csv"), show_col_types = FALSE) %>% drop_na(all_of(TARGET_LOG))
-test_df  <- read_csv(paste0(in_fs_dir, "test_dl.csv"), show_col_types = FALSE) %>% drop_na(all_of(TARGET_LOG))
+train_df <- read_csv(file.path(in_fs_dir, "train_dl.csv"), show_col_types = FALSE) %>% drop_na(all_of(TARGET_LOG))
+val_df   <- read_csv(file.path(in_fs_dir, "val_dl.csv"),   show_col_types = FALSE) %>% drop_na(all_of(TARGET_LOG))
+test_df  <- read_csv(file.path(in_fs_dir, "test_dl.csv"),  show_col_types = FALSE) %>% drop_na(all_of(TARGET_LOG))
 
 feature_cols <- setdiff(colnames(train_df), c("datetime_local", TARGET_LOG))
 
@@ -84,26 +100,68 @@ stats_preds_train <- list()
 stats_preds_val   <- list()
 stats_preds_test  <- list()
 
-# Hàm huấn luyện Thống kê
+# ── True 24-Step Walk-Forward Forecast (Leak-Free) ──────────────────────
+rolling_forecast_24h <- function(model_fit, all_y, all_exog, start_idx, end_idx) {
+  n_steps <- end_idx - start_idx + 1
+  preds <- numeric(n_steps)
+  
+  for (idx in 1:n_steps) {
+    i <- start_idx + idx - 1
+    # Để dự báo điểm i (T+24), ta chỉ dùng dữ liệu đến i-24 (T)
+    y_history <- all_y[1:(i-24)]
+    x_history <- if(!is.null(all_exog)) all_exog[1:(i-24), , drop=FALSE] else NULL
+    
+    # Exog tương lai: Ta dùng giá trị tại i-24 (thời điểm T) lặp lại 24 lần 
+    # (Do ta không có dự báo thời tiết thực tế cho 24h tới)
+    x_future <- if(!is.null(all_exog)) matrix(rep(all_exog[i-24, ], 24), nrow=24, byrow=TRUE) else NULL
+    
+    # Cập nhật trạng thái mô hình (không refit tham số) và dự báo
+    if (!is.null(x_history)) {
+      temp_fit <- Arima(y_history, model = model_fit, xreg = x_history)
+      fc <- forecast(temp_fit, h = 24, xreg = x_future)
+    } else {
+      temp_fit <- Arima(y_history, model = model_fit)
+      fc <- forecast(temp_fit, h = 24)
+    }
+    
+    preds[idx] <- as.numeric(tail(fc$mean, 1))
+    
+    if (idx %% 500 == 0) cat(sprintf("    Progress: %d/%d\n", idx, n_steps))
+  }
+  return(preds)
+}
+
+# Chuẩn bị dữ liệu Global để lookback qua ranh giới Train/Val/Test
+all_y_global <- c(y_train, y_val, y_test)
+all_exog_global <- if (length(exog_cols) > 0) rbind(train_exog, val_exog, test_exog) else NULL
+
+val_start_idx  <- length(y_train) + 1
+val_end_idx    <- length(y_train) + length(y_val)
+test_start_idx <- val_end_idx + 1
+test_end_idx   <- val_end_idx + length(y_test)
+
+# Hàm huấn luyện Thống kê (V2: Walk-forward 24h)
 fit_and_predict_stats <- function(order, seasonal = c(0,0,0), use_exog = FALSE, name = "Model") {
   cat(sprintf(" Training %s...\n", name))
-  
+
   xreg_train <- if (use_exog) train_exog else NULL
-  xreg_val   <- if (use_exog) val_exog else NULL
-  xreg_test  <- if (use_exog) test_exog else NULL
   
-  # Fit mô hình trên Train
+  # Fit mô hình gốc trên Train
   model_fit <- Arima(ts_train_y, order = order, seasonal = list(order = seasonal, period = 24), xreg = xreg_train)
   stats_preds_train[[name]] <<- as.numeric(fitted(model_fit))
+
+  # ── FIXED: Dự báo trượt 24-bước không leak dữ liệu ────
+  xreg_global <- if (use_exog) all_exog_global else NULL
   
-  # Apply mô hình lên Val & Test (1-step ahead dự báo)
-  model_val <- Arima(y_val, model = model_fit, xreg = xreg_val)
-  stats_preds_val[[name]] <<- as.numeric(fitted(model_val))
+  cat(sprintf("  Rolling forecast %s on Val set...\n", name))
+  stats_preds_val[[name]]   <<- rolling_forecast_24h(model_fit, all_y_global, xreg_global, val_start_idx, val_end_idx)
   
-  model_test <- Arima(y_test, model = model_fit, xreg = xreg_test)
-  stats_preds_test[[name]] <<- as.numeric(fitted(model_test))
-  
-  cat(sprintf("✅ %s fit xong!\n", name))
+  cat(sprintf("  Rolling forecast %s on Test set...\n", name))
+  stats_preds_test[[name]]  <<- rolling_forecast_24h(model_fit, all_y_global, xreg_global, test_start_idx, test_end_idx)
+
+  # Sanity check: Độ tương quan với giá trị thực bước trước (nên thấp nếu không leak)
+  lag_corr <- cor(stats_preds_test[[name]][2:length(y_test)], y_test[1:(length(y_test)-1)])
+  cat(sprintf("✅ %s xong! Sanity Correlation (pred[t] vs y[t-1]): %.4f\n", name, lag_corr))
 }
 
 # FIT MODELS (Mô phỏng lại cấu hình từ Python)
@@ -129,16 +187,16 @@ make_tensor <- function(X, y) {
 }
 
 train_t <- make_tensor(X_train, y_train)
-val_t   <- make_tensor(X_val, y_val)
-test_t  <- make_tensor(X_test, y_test)
+val_t   <- make_tensor(X_val,   y_val)
+test_t  <- make_tensor(X_test,  y_test)
 
 # Dataloaders
 batch_size <- 64
 train_ds <- tensor_dataset(train_t$X, train_t$y)
-val_ds   <- tensor_dataset(val_t$X, val_t$y)
+val_ds   <- tensor_dataset(val_t$X,   val_t$y)
 
 train_loader <- dataloader(train_ds, batch_size = batch_size, shuffle = FALSE)
-val_loader   <- dataloader(val_ds, batch_size = batch_size, shuffle = FALSE)
+val_loader   <- dataloader(val_ds,   batch_size = batch_size, shuffle = FALSE)
 
 num_features <- ncol(X_train)
 
@@ -158,7 +216,7 @@ SimpleRNNModel <- nn_module(
     out <- self$rnn(x)
     out <- out[[1]] # Lấy output Tensor, bỏ qua Hidden States
     # Chỉ lấy time-step cuối cùng
-    out <- out[ , dim(out)[2], ] 
+    out <- out[ , dim(out)[2], ]
     out <- self$fc(out)
     return(out)
   }
@@ -169,26 +227,26 @@ train_dl_model <- function(model, epochs = 50, lr = 1e-3) {
   model <- model$to(device = device)
   optimizer <- optim_adam(model$parameters, lr = lr)
   criterion <- nn_mse_loss()
-  
+
   for (epoch in 1:epochs) {
     model$train()
     train_loss <- 0
-    
+
     coro::loop(for (b in train_loader) {
       X_b <- b[[1]]$to(device = device)
       y_b <- b[[2]]$to(device = device)
-      
+
       optimizer$zero_grad()
       preds <- model(X_b)
-      loss <- criterion(preds, y_b)
+      loss  <- criterion(preds, y_b)
       loss$backward()
       optimizer$step()
-      
+
       train_loss <- train_loss + loss$item() * X_b$size(1)
     })
-    
+
     train_loss <- train_loss / length(train_ds)
-    
+
     # Validation Loop
     model$eval()
     val_loss <- 0
@@ -197,12 +255,12 @@ train_dl_model <- function(model, epochs = 50, lr = 1e-3) {
         X_b <- b[[1]]$to(device = device)
         y_b <- b[[2]]$to(device = device)
         preds <- model(X_b)
-        loss <- criterion(preds, y_b)
+        loss  <- criterion(preds, y_b)
         val_loss <- val_loss + loss$item() * X_b$size(1)
       })
     })
     val_loss <- val_loss / length(val_ds)
-    
+
     if (epoch %% 10 == 0) {
       cat(sprintf("Epoch %02d | Train Loss: %.4f | Val Loss: %.4f\n", epoch, train_loss, val_loss))
     }
@@ -245,28 +303,28 @@ results <- data.frame()
 # Đưa Thống kê vào bảng
 for (m in names(stats_preds_train)) {
   r_tr <- regression_metrics(y_train, stats_preds_train[[m]])
-  r_va <- regression_metrics(y_val, stats_preds_val[[m]])
-  r_te <- regression_metrics(y_test, stats_preds_test[[m]])
-  
-  results <- rbind(results, 
+  r_va <- regression_metrics(y_val,   stats_preds_val[[m]])
+  r_te <- regression_metrics(y_test,  stats_preds_test[[m]])
+
+  results <- rbind(results,
                    data.frame(model = m, split = "train", RMSE = r_tr[1], MAE = r_tr[2], MAPE = r_tr[3]),
-                   data.frame(model = m, split = "val", RMSE = r_va[1], MAE = r_va[2], MAPE = r_va[3]),
-                   data.frame(model = m, split = "test", RMSE = r_te[1], MAE = r_te[2], MAPE = r_te[3]))
+                   data.frame(model = m, split = "val",   RMSE = r_va[1], MAE = r_va[2], MAPE = r_va[3]),
+                   data.frame(model = m, split = "test",  RMSE = r_te[1], MAE = r_te[2], MAPE = r_te[3]))
 }
 
 # Đưa DL vào bảng
 dl_preds <- list(LSTM = list(train = lstm_preds_train, val = lstm_preds_val, test = lstm_preds_test),
-                 GRU  = list(train = gru_preds_train, val = gru_preds_val, test = gru_preds_test))
+                 GRU  = list(train = gru_preds_train,  val = gru_preds_val,  test = gru_preds_test))
 
 for (m in names(dl_preds)) {
   r_tr <- regression_metrics(y_train, dl_preds[[m]]$train)
-  r_va <- regression_metrics(y_val, dl_preds[[m]]$val)
-  r_te <- regression_metrics(y_test, dl_preds[[m]]$test)
-  
-  results <- rbind(results, 
+  r_va <- regression_metrics(y_val,   dl_preds[[m]]$val)
+  r_te <- regression_metrics(y_test,  dl_preds[[m]]$test)
+
+  results <- rbind(results,
                    data.frame(model = m, split = "train", RMSE = r_tr[1], MAE = r_tr[2], MAPE = r_tr[3]),
-                   data.frame(model = m, split = "val", RMSE = r_va[1], MAE = r_va[2], MAPE = r_va[3]),
-                   data.frame(model = m, split = "test", RMSE = r_te[1], MAE = r_te[2], MAPE = r_te[3]))
+                   data.frame(model = m, split = "val",   RMSE = r_va[1], MAE = r_va[2], MAPE = r_va[3]),
+                   data.frame(model = m, split = "test",  RMSE = r_te[1], MAE = r_te[2], MAPE = r_te[3]))
 }
 
 # Hiện Test Metrics
@@ -285,13 +343,13 @@ p_bar <- ggplot(plot_df, aes(x = metric, y = value, fill = model)) +
   geom_col(position = "dodge", color = "black", alpha = 0.8) +
   labs(title = "So sánh metric trên tập Test (PM2.5 t+24h)", x = "Metric", y = "Giá trị")
 
-ggsave(paste0(fig_dir, "stats_dl_models_test_metrics_bar.png"), plot = p_bar, width = 10, height = 5)
+ggsave(file.path(fig_dir, "stats_dl_models_test_metrics_bar.png"), plot = p_bar, width = 10, height = 5)
 print(p_bar)
 
 # 4.2 Time-Series (200 giờ đầu)
 subset_size <- min(200, length(y_test))
 ts_df <- data.frame(
-  Hour = 1:subset_size,
+  Hour   = 1:subset_size,
   Actual  = expm1(y_test[1:subset_size]),
   LSTM    = expm1(lstm_preds_test[1:subset_size]),
   GRU     = expm1(gru_preds_test[1:subset_size]),
@@ -304,15 +362,15 @@ ts_df <- data.frame(
 
 p_ts <- ggplot(ts_df, aes(x = Hour, y = PM2.5, color = Model, size = Model, linetype = Model)) +
   geom_line(alpha = 0.7) +
-  scale_color_manual(values = c("Actual" = "black", "LSTM" = "blue", "GRU" = "cyan", 
-                                "ARIMA" = "red", "SARIMA" = "orange", "ARIMAX" = "green", "SARIMAX" = "purple")) +
-  scale_size_manual(values = c("Actual" = 1.5, "LSTM" = 0.8, "GRU" = 0.8, 
-                               "ARIMA" = 0.8, "SARIMA" = 0.8, "ARIMAX" = 0.8, "SARIMAX" = 0.8)) +
-  scale_linetype_manual(values = c("Actual" = "solid", "LSTM" = "solid", "GRU" = "solid", 
-                                   "ARIMA" = "dashed", "SARIMA" = "dashed", "ARIMAX" = "dotted", "SARIMAX" = "dotted")) +
+  scale_color_manual(values    = c("Actual" = "black",  "LSTM" = "blue",   "GRU" = "cyan",
+                                   "ARIMA"  = "red",    "SARIMA" = "orange","ARIMAX" = "green", "SARIMAX" = "purple")) +
+  scale_size_manual(values     = c("Actual" = 1.5,      "LSTM" = 0.8,      "GRU" = 0.8,
+                                   "ARIMA"  = 0.8,      "SARIMA" = 0.8,    "ARIMAX" = 0.8,     "SARIMAX" = 0.8)) +
+  scale_linetype_manual(values = c("Actual" = "solid",  "LSTM" = "solid",  "GRU" = "solid",
+                                   "ARIMA"  = "dashed", "SARIMA" = "dashed","ARIMAX" = "dotted","SARIMAX" = "dotted")) +
   labs(title = "Actual vs Predicted (200 giờ đầu của tập Test)", x = "Giờ", y = "PM2.5 (µg/m³)")
 
-ggsave(paste0(fig_dir, "stats_dl_models_test_timeseries.png"), plot = p_ts, width = 14, height = 6)
+ggsave(file.path(fig_dir, "stats_dl_models_test_timeseries.png"), plot = p_ts, width = 14, height = 6)
 print(p_ts)
 
 cat(" Hoàn tất toàn bộ quy trình! Các biểu đồ đã được lưu.\n")

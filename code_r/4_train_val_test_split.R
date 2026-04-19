@@ -7,10 +7,15 @@
 library(tidyverse)
 library(lubridate)
 
-# 1. ĐỊNH NGHĨA ĐƯỜNG DẪN
-base_dir <- "C:/Users/TRAN ANH DUC/OneDrive/Máy tính/IS403_HCMC_Air_Quality"
-path_input <- paste0(base_dir, "/data/processed_R/hcmc_merged_cleaned.csv")
-out_dir <- paste0(base_dir, "/data/processed_R/")
+# 1. ĐỊNH NGHĨA ĐƯỜNG DẪN (động, không hard-code)
+script_dir <- tryCatch(
+  dirname(normalizePath(sys.frame(1)$ofile)),
+  error = function(e) dirname(normalizePath(rstudioapi::getActiveDocumentContext()$path))
+)
+PROJECT_ROOT <- normalizePath(file.path(script_dir, ".."), winslash = "/")
+
+path_input <- file.path(PROJECT_ROOT, "data/processed_R/hcmc_merged_cleaned.csv")
+out_dir    <- file.path(PROJECT_ROOT, "data/processed_R/")
 
 # 2. ĐỌC VÀ CHUẨN BỊ DỮ LIỆU
 df <- read_csv(path_input, show_col_types = FALSE)
@@ -21,15 +26,15 @@ df <- df %>%
     arrange(datetime_local)
 
 # 3. TÍNH TOÁN KÍCH THƯỚC CÁC TẬP (60% Train - 20% Val - 20% Test)
-n_total <- nrow(df)
+n_total    <- nrow(df)
 train_size <- floor(n_total * 0.60)
-val_size <- floor(n_total * 0.20)
-test_size <- n_total - train_size - val_size
+val_size   <- floor(n_total * 0.20)
+test_size  <- n_total - train_size - val_size
 
 # 4. CẮT DỮ LIỆU (Slicing)
 train_df <- df[1:train_size, ]
-val_df <- df[(train_size + 1):(train_size + val_size), ]
-test_df <- df[(train_size + val_size + 1):n_total, ]
+val_df   <- df[(train_size + 1):(train_size + val_size), ]
+test_df  <- df[(train_size + val_size + 1):n_total, ]
 
 # 5. HIỂN THỊ THÔNG TIN ĐỂ KIỂM TRA (Sanity Check)
 cat("Tổng số dòng toàn bộ dữ liệu:", n_total, "\n\n")
@@ -45,7 +50,7 @@ cat("   -> Từ", as.character(min(test_df$datetime_local)), "đến", as.charac
 
 # 6. LƯU KẾT QUẢ VÀO THƯ MỤC R
 write_csv(train_df, paste0(out_dir, "train_split.csv"))
-write_csv(val_df, paste0(out_dir, "val_split.csv"))
-write_csv(test_df, paste0(out_dir, "test_split.csv"))
+write_csv(val_df,   paste0(out_dir, "val_split.csv"))
+write_csv(test_df,  paste0(out_dir, "test_split.csv"))
 
 cat(" Đã chia tập dữ liệu thành công! File lưu tại:", out_dir, "\n")

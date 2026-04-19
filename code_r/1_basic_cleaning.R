@@ -7,16 +7,22 @@ library(tidyverse)
 library(lubridate)
 library(zoo)
 
-# 1. Thiết lập đường dẫn hệ thống
-# Sử dụng đường dẫn tuyệt đối để đảm bảo tính chính xác khi đọc/ghi file trên Windows
-path_air     <- "C:/Users/TRAN ANH DUC/OneDrive/Máy tính/IS403_HCMC_Air_Quality/data/raw/hcm_air_data.csv"
-path_weather <- "C:/Users/TRAN ANH DUC/OneDrive/Máy tính/IS403_HCMC_Air_Quality/data/raw/hcmc_weather_data.csv"
+# 1. Thiết lập đường dẫn hệ thống (động, không hard-code)
+# Lấy thư mục gốc của project (thư mục cha của code_r/)
+script_dir <- tryCatch(
+  dirname(normalizePath(sys.frame(1)$ofile)),
+  error = function(e) dirname(normalizePath(rstudioapi::getActiveDocumentContext()$path))
+)
+PROJECT_ROOT <- normalizePath(file.path(script_dir, ".."), winslash = "/")
+
+path_air     <- file.path(PROJECT_ROOT, "data/raw/hcm_air_data.csv")
+path_weather <- file.path(PROJECT_ROOT, "data/raw/hcmc_weather_data.csv")
 
 # Đường dẫn lưu trữ kết quả riêng cho luồng xử lý bằng R
-path_output  <- "C:/Users/TRAN ANH DUC/OneDrive/Máy tính/IS403_HCMC_Air_Quality/data/processed_R/hcmc_merged_cleaned.csv"
+path_output  <- file.path(PROJECT_ROOT, "data/processed_R/hcmc_merged_cleaned.csv")
 
 # 2. Đọc dữ liệu thô
-air_df <- read_csv(path_air, show_col_types = FALSE)
+air_df     <- read_csv(path_air, show_col_types = FALSE)
 weather_df <- read_csv(path_weather, show_col_types = FALSE)
 
 # 3. Tiền xử lý thời gian (Datetime)
@@ -33,7 +39,7 @@ weather_df <- weather_df %>%
 # 4. Kết hợp hai bộ dữ liệu (Merge) dựa trên mốc thời gian
 df <- air_df %>%
   left_join(weather_df, by = c("datetime_local_naive" = "time")) %>%
-  select(-datetime_local_naive) %>% 
+  select(-datetime_local_naive) %>%
   arrange(datetime_local)
 
 # 5. Loại bỏ các đặc trưng không phù hợp
@@ -45,8 +51,8 @@ df <- df %>%
 # Tạo khung thời gian liên tục theo từng giờ (Hourly)
 full_time_sequence <- seq(
   from = min(df$datetime_local, na.rm = TRUE),
-  to = max(df$datetime_local, na.rm = TRUE),
-  by = "hour"
+  to   = max(df$datetime_local, na.rm = TRUE),
+  by   = "hour"
 )
 
 df_interpolated <- df %>%
