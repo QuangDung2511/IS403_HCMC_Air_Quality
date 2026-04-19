@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCMC Air Quality Intelligence</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Globe.gl -->
+    <script src="https://unpkg.com/globe.gl"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.2">
+</head>
+<body>
+    <div class="stars-bg"></div>
+    <div class="glow-point glow-1"></div>
+    <div class="glow-point glow-2"></div>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <div class="logo">
+                <i class="fa-solid fa-earth-asia"></i> <span style="font-weight:700; color:#fff">Air</span> <span class="highlight">Indx</span> <span style="font-weight:700; color:#fff">HCM</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#" class="active">Air Quality</a></li>
+                <li><a href="#">Monitors</a></li>
+                <li><a href="#">Discover</a></li>
+            </ul>
+        </div>
+        <div class="nav-right">
+            <ul class="nav-links">
+                <li><a href="#">About</a></li>
+                <li><a href="#">Technology</a></li>
+            </ul>
+            <button class="btn-primary" onclick="showToast('Get Started is a demo feature!')">Get Started</button>
+        </div>
+    </nav>
+
+    <main class="dashboard">
+        <header class="header">
+            <h1>Air Quality <span class="dim">Index</span></h1>
+            <div class="datetime" id="current-time">Loading...</div>
+            <div class="location">
+                <span class="label">Local <i class="fa-solid fa-arrow-right"></i></span>
+                <img src="https://flagcdn.com/24x18/vn.png" alt="Vietnam" class="flag"> HCMC
+            </div>
+        </header>
+
+        <div class="content-grid">
+            <!-- Left Column -->
+            <div class="col-left">
+                <!-- Main Stats Card -->
+                <div class="glass-card main-stats">
+                    <h2>Main Statistics</h2>
+                    <div class="aqi-section">
+                        <span class="aqi-label">AQI</span>
+                        <div class="aqi-value" id="current-aqi">--</div>
+                    </div>
+                    <div class="pollutant-info">
+                        <span class="dim">Dominant Pollutant</span>
+                        <span class="highlight-text">PM2.5</span> — <span class="weather-text">Wind</span>
+                    </div>
+                </div>
+
+                <!-- Risk Card -->
+                <div class="glass-card risk-card">
+                    <div class="card-header">
+                        <h2>Risk of Pollution</h2>
+                        <button class="btn-warning" onclick="document.querySelector('.charts-section').scrollIntoView({behavior: 'smooth'})">Details</button>
+                    </div>
+                    <span class="dim">Risk</span>
+                    <div class="risk-value" id="risk-percent">--%</div>
+                    <div class="risk-desc" id="risk-desc">Calculating risk profile...</div>
+                    <div class="wind-graphic">
+                        <i class="fa-solid fa-wind" style="font-size: 3rem; opacity: 0.1; position: absolute; right: 20px; bottom: 20px;"></i>
+                    </div>
+                </div>
+                
+                <!-- Weather / Conditions -->
+                <div class="glass-card small-card">
+                    <h2>Weather Conditions</h2>
+                    <div class="weather-grid">
+                        <div class="w-item">
+                            <i class="fa-solid fa-temperature-three-quarters"></i>
+                            <span id="w-temp">--°C</span>
+                        </div>
+                        <div class="w-item">
+                            <i class="fa-solid fa-droplet"></i>
+                            <span id="w-hum">--%</span>
+                        </div>
+                        <div class="w-item">
+                            <i class="fa-solid fa-wind"></i>
+                            <span id="w-wind">-- km/h</span>
+                        </div>
+                        <div class="w-item">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span id="w-press">-- hPa</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Model Performance -->
+                <div class="glass-card small-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h2>Model Performance</h2>
+                        <span class="badge" id="model-name">XGBoost Tuned</span>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="m-item">
+                            <span class="m-label">Test RMSE</span>
+                            <span class="m-val" id="m-rmse">--</span>
+                        </div>
+                        <div class="m-item">
+                            <span class="m-label">Test MAE</span>
+                            <span class="m-val" id="m-mae">--</span>
+                        </div>
+                        <div class="m-item">
+                            <span class="m-label">Test MAPE</span>
+                            <span class="m-val" id="m-mape">--%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column / Visualization -->
+            <div class="col-right">
+                <div class="globe-container">
+                    <div id="globeViz" style="width: 1100px; height: 1100px; position: absolute; right: -15%; top: 50%; transform: translateY(-50%);"></div>
+                    
+                    <!-- Hidden template for marker -->
+                    <div style="display: none;" id="marker-template-container">
+                        <!-- Pulse marker -->
+                        <div class="marker-container">
+                            <div class="marker-pulse" id="marker-color-ring"></div>
+                            <div class="marker-value" id="marker-aqi">--</div>
+                            
+                            <!-- Popup Card -->
+                            <div class="popup-card">
+                                <div class="popup-header">
+                                    <i class="fa-solid fa-circle-exclamation popup-icon"></i>
+                                    <span>Hồ Chí Minh, Vietnam</span>
+                                    <span class="popup-link">Details</span>
+                                </div>
+                                <div class="popup-body">
+                                    <div class="popup-aqi-box" id="popup-aqi-box">
+                                        <div class="popup-aqi-val" id="popup-aqi">--</div>
+                                        <div class="popup-aqi-label">AQI PM2.5</div>
+                                    </div>
+                                    <div class="popup-desc" id="popup-level">Loading...</div>
+                                </div>
+                                <div class="popup-footer">
+                                    <span id="popup-pm25">PM2.5: -- µg/m³</span>
+                                    <span>+24h Forecast: <strong id="popup-pred">--</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="coords">
+                        <p>LA: <span id="coord-x">10.762622</span></p>
+                        <p>LO: <span id="coord-y">106.660172</span></p>
+                    </div>
+                    
+                    <div class="globe-controls">
+                        <button class="btn-primary" id="btn-3d-globe" onclick="toggleGlobeStyle('3d')">3D GLOBE</button>
+                        <button class="btn-secondary" id="btn-iq-map" onclick="toggleGlobeStyle('map')">IQ AIR MAP</button>
+                    </div>
+                    
+                    <div class="zoom-controls">
+                        <span>Zoom</span>
+                        <button class="icon-btn" onclick="zoomGlobe(1)"><i class="fa-solid fa-plus"></i></button>
+                        <button class="icon-btn" onclick="zoomGlobe(-1)"><i class="fa-solid fa-minus"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <div class="glass-card chart-container">
+                <div class="card-header">
+                    <h2>24-Hour PM2.5 Forecast (µg/m³)</h2>
+                    <span class="dim">Predicted by Tuned XGBoost</span>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="forecastChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="glass-card chart-container">
+                <div class="card-header">
+                    <h2>Past 48h: Actual vs Predicted</h2>
+                    <span class="dim">Model Tracking Accuracy</span>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="historyChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+    </main>
+
+    <footer class="footer">
+        <div class="share-links">
+            <span>Share</span>
+            <div class="social-icons">
+                <i class="fa-brands fa-facebook"></i>
+                <i class="fa-brands fa-twitter"></i>
+                <i class="fa-brands fa-whatsapp"></i>
+            </div>
+        </div>
+        <div class="sim-controls">
+            <span class="dim" style="margin-right: 15px;">Dashboard updates automatically</span>
+            <button id="advance-time-btn" class="btn-secondary" style="padding: 5px 15px; font-size: 0.8rem;">Advance 1 Hour</button>
+        </div>
+    </footer>
+
+    <div id="toast" class="toast">Action recognized!</div>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=1.6"></script>
+</body>
+</html>
