@@ -19,8 +19,12 @@
     <!-- Globe.gl -->
     <script src="https://unpkg.com/globe.gl"></script>
     
+    <!-- Leaflet.js for Satellite Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.3">
 </head>
 <body>
     <div class="stars-bg"></div>
@@ -130,6 +134,11 @@
                 <div class="globe-wrapper">
                     <div id="globeViz"></div>
                     
+                    <!-- Satellite Map Overlay (hidden by default) -->
+                    <div id="satelliteMapContainer" class="satellite-map-container" style="display:none;">
+                        <div id="satelliteMap" style="width:100%;height:100%;"></div>
+                    </div>
+                    
                     <div class="globe-overlay-top">
                         <div class="location-tag">
                             <i class="fa-solid fa-location-dot"></i>
@@ -143,6 +152,7 @@
                         <div class="control-divider"></div>
                         <button class="control-btn" id="btn-3d-globe" onclick="toggleGlobeStyle('3d')"><i class="fa-solid fa-earth-americas"></i></button>
                         <button class="control-btn" id="btn-iq-map" onclick="toggleGlobeStyle('map')"><i class="fa-solid fa-map"></i></button>
+                        <button class="control-btn" id="btn-satellite" onclick="toggleSatelliteView()" title="Satellite Detail View"><i class="fa-solid fa-satellite"></i></button>
                     </div>
 
                     <!-- Hidden template for marker -->
@@ -286,6 +296,6 @@
         </div>
     </footer>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=2.0"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=2.4"></script>
 </body>
 </html>

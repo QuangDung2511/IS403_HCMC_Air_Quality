@@ -137,17 +137,19 @@ async function fetchCurrentData() {
     document.getElementById('risk-bar-fill').style.boxShadow = `0 0 10px 2px ${data.color}`;
 
     
-    // Dynamically update the 3D surface ring glow covering the city
-    myGlobe.ringsData([{ lat: 10.7626, lng: 106.6602, color: data.color }]);
-    
-    // Update polygon boundary color if zoomed in
-    if (isZoomedIn) {
-        myGlobe
-            .polygonCapColor(() => 'rgba(255, 126, 0, 0.15)')
-            .polygonSideColor(() => 'rgba(255, 126, 0, 0.6)')
-            .polygonStrokeColor(() => 'rgba(255, 200, 50, 1)')
-            .polygonsData([HCMC_BOUNDARY]);
+    // 3D Globe: Update the primary ring at center
+    if (myGlobe && !isSatelliteMode) {
+        myGlobe.ringsData([{ lat: 10.7626, lng: 106.6602, color: data.color }]);
     }
+    
+    // Satellite Map: Update marker if open
+    if (isSatelliteMode && satMap) {
+        updateSatMarker();
+    }
+    
+    // Update the AQI circle color in the header/marker templates
+    const markerCircle = document.getElementById('marker-color-ring');
+    if (markerCircle) markerCircle.style.borderColor = data.color;
     
     // Update Weather
     document.getElementById('w-temp').textContent = `${data.weather.temperature}°C`;
@@ -327,78 +329,106 @@ async function fetchModelInfo() {
     }
 }
 
-// Simplified administrative boundary of Ho Chi Minh City (GeoJSON)
-const HCMC_BOUNDARY = {
-    type: "Feature",
-    properties: { name: "Hồ Chí Minh City", area: "Monitoring Zone" },
-    geometry: {
-        type: "Polygon",
-        coordinates: [[
-            [106.3637, 10.7538],
-            [106.3670, 10.8150],
-            [106.3890, 10.8680],
-            [106.4250, 10.9200],
-            [106.4800, 10.9620],
-            [106.5400, 10.9900],
-            [106.6050, 11.0050],
-            [106.6700, 11.0000],
-            [106.7300, 10.9750],
-            [106.7850, 10.9350],
-            [106.8250, 10.8800],
-            [106.8550, 10.8150],
-            [106.8750, 10.7500],
-            [106.8850, 10.6800],
-            [106.8800, 10.6100],
-            [106.8600, 10.5500],
-            [106.8250, 10.4950],
-            [106.7750, 10.4500],
-            [106.7150, 10.4150],
-            [106.6500, 10.3900],
-            [106.5800, 10.3800],
-            [106.5100, 10.3850],
-            [106.4450, 10.4050],
-            [106.3950, 10.4400],
-            [106.3600, 10.4900],
-            [106.3400, 10.5500],
-            [106.3350, 10.6200],
-            [106.3400, 10.6850],
-            [106.3637, 10.7538]
-        ]]
+// HCMC boundary perimeter coordinates [lng, lat]
+const HCMC_BOUNDARY_COORDS = [
+    [106.3637, 10.7538], [106.3670, 10.8150], [106.3890, 10.8680],
+    [106.4250, 10.9200], [106.4800, 10.9620], [106.5400, 10.9900],
+    [106.6050, 11.0050], [106.6700, 11.0000], [106.7300, 10.9750],
+    [106.7850, 10.9350], [106.8250, 10.8800], [106.8550, 10.8150],
+    [106.8750, 10.7500], [106.8850, 10.6800], [106.8800, 10.6100],
+    [106.8600, 10.5500], [106.8250, 10.4950], [106.7750, 10.4500],
+    [106.7150, 10.4150], [106.6500, 10.3900], [106.5800, 10.3800],
+    [106.5100, 10.3850], [106.4450, 10.4050], [106.3950, 10.4400],
+    [106.3600, 10.4900], [106.3400, 10.5500], [106.3350, 10.6200],
+    [106.3400, 10.6850], [106.3637, 10.7538]
+];
+
+// Interpolate boundary to create ~200 dense points for a smooth glow line
+function interpolateBoundary(coords, pointsPerSegment) {
+    const pts = [];
+    for (let i = 0; i < coords.length - 1; i++) {
+        const [lng1, lat1] = coords[i];
+        const [lng2, lat2] = coords[i + 1];
+        for (let j = 0; j < pointsPerSegment; j++) {
+            const t = j / pointsPerSegment;
+            pts.push({
+                lat: lat1 + (lat2 - lat1) * t,
+                lng: lng1 + (lng2 - lng1) * t,
+                size: 0.06 + Math.random() * 0.03,       // slight size variation
+                color: `rgba(59, 180, 246, ${0.7 + Math.random() * 0.3})`,
+                alt: 0.002 + Math.random() * 0.003        // tiny altitude jitter
+            });
+        }
     }
-};
+    return pts;
+}
+const HCMC_GLOW_BORDER = interpolateBoundary(HCMC_BOUNDARY_COORDS, 8); // ~220 points
+
+const DEFAULT_RINGS = [{ lat: 10.7626, lng: 106.6602, color: 'rgba(255, 126, 0, 0.6)' }];
 
 let isZoomedIn = false;
 
-// Interactivity 
 window.zoomToHCMC = function() {
-    if(!myGlobe) return;
-    
-    if (isZoomedIn) {
-        // Zoom back out and hide boundary
-        myGlobe.pointOfView({ lat: 10.7626, lng: 106.6602, altitude: 2.2 }, 1800);
-        myGlobe.polygonsData([]);
-        myGlobe.controls().autoRotate = true;
-        isZoomedIn = false;
-    } else {
-        // Set bright, clearly visible polygon colors
-        myGlobe
-            .polygonCapColor(() => 'rgba(255, 126, 0, 0.15)')
-            .polygonSideColor(() => 'rgba(255, 126, 0, 0.7)')
-            .polygonStrokeColor(() => 'rgba(255, 200, 50, 1)')
-            .polygonAltitude(0.025);
+    const container = document.getElementById('satelliteMapContainer');
+    const globeEl   = document.getElementById('globeViz');
+    const satBtn    = document.getElementById('btn-satellite');
+
+    if (isSatelliteMode) {
+        // --- SEAMLESS FLY BACK OUT ---
+        // 1. Show globe immediately behind the satellite
+        globeEl.style.display = 'block';
         
-        // Zoom in and show HCMC boundary
-        myGlobe.pointOfView({ lat: 10.7626, lng: 106.6602, altitude: 0.4 }, 2000);
+        // 2. Start globe zoom-out simultaneously
+        if (myGlobe) {
+            myGlobe.pointOfView({ lat: 10.7626, lng: 106.6602, altitude: 2.2 }, 2000);
+            myGlobe.controls().autoRotate = true;
+        }
         
-        // Show the boundary polygon after zoom has started
+        // 3. Fade out satellite layer
+        container.style.opacity = '0';
+        
         setTimeout(() => {
-            myGlobe.polygonsData([HCMC_BOUNDARY]);
-        }, 600);
-        
-        myGlobe.controls().autoRotate = false;
-        isZoomedIn = true;
+            container.style.display = 'none';
+            satBtn.classList.remove('active');
+            isSatelliteMode = false;
+        }, 1000);
+        return;
     }
+    
+    if (!myGlobe) return;
+    
+    // --- SEAMLESS FLY IN ---
+    // Phase 1: Globe zoom toward HCMC cinematically
+    myGlobe.controls().autoRotate = false;
+    myGlobe.pointOfView({ lat: 10.72, lng: 106.66, altitude: 0.25 }, 2000);
+    
+    // Phase 2: At peak zoom, cross-fade to satellite map
+    setTimeout(() => {
+        container.style.display = 'block';
+        container.style.opacity = '0';
+        satBtn.classList.add('active');
+        
+        // Initialize satellite map if first time
+        if (!satMap) { initSatelliteMap(); }
+        else { 
+            satMap.invalidateSize();
+            updateSatMarker(); // Ensure AQI is fresh
+        }
+        
+        // Smooth fade-in overlap
+        requestAnimationFrame(() => {
+            container.style.opacity = '1';
+        });
+        
+        // After fade completes, hide globe underneath for performance
+        setTimeout(() => {
+            globeEl.style.display = 'none';
+            isSatelliteMode = true;
+        }, 900);
+    }, 1200); // Shorter delay for smoother takeover
 };
+
+
 
 window.zoomGlobe = function(dir) {
     if(!myGlobe) return;
@@ -421,10 +451,132 @@ window.toggleGlobeStyle = function(style) {
 
 window.showToast = function(msg) {
     const toast = document.getElementById('toast');
+    if (!toast) return;
     toast.textContent = msg;
     toast.classList.add('show');
     setTimeout(() => {
         toast.classList.remove('show');
     }, 3000);
+};
+
+// ─── Satellite Detail View ────────────────────────────────────────────────────
+let satMap = null;
+let isSatelliteMode = false;
+
+function initSatelliteMap() {
+    satMap = L.map('satelliteMap', {
+        center: [10.82, 106.63],
+        zoom: 10,
+        zoomControl: false,
+        attributionControl: false
+    });
+    
+    // ESRI World Imagery — high-res satellite tiles
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 18
+    }).addTo(satMap);
+    
+    // Semi-transparent labels overlay for place names
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 18,
+        opacity: 0.7
+    }).addTo(satMap);
+    
+    // HCMC boundary — Google Earth style (red/coral)
+    const boundaryLatLngs = HCMC_BOUNDARY_COORDS.map(([lng, lat]) => [lat, lng]);
+    
+    // Outer glow (soft red)
+    L.polyline(boundaryLatLngs, {
+        color: '#ef4444',
+        weight: 6,
+        opacity: 0.25,
+        lineJoin: 'round'
+    }).addTo(satMap);
+    
+    // Core boundary line (bright coral)
+    L.polyline(boundaryLatLngs, {
+        color: '#f87171',
+        weight: 2.5,
+        opacity: 0.85,
+        lineJoin: 'round'
+    }).addTo(satMap);
+    
+    // Filled area overlay
+    L.polygon(boundaryLatLngs, {
+        color: 'transparent',
+        fillColor: '#ef4444',
+        fillOpacity: 0.06
+    }).addTo(satMap);
+    
+    // "Ho Chi Minh City" label
+    const cityLabel = L.divIcon({
+        className: 'sat-city-label',
+        html: '<div class="sat-city-name">Ho Chi Minh City</div>',
+        iconSize: [200, 30],
+        iconAnchor: [100, 15]
+    });
+    L.marker([10.78, 106.60], { icon: cityLabel, interactive: false }).addTo(satMap);
+    
+    // Attribution
+    L.control.attribution({ position: 'bottomleft', prefix: '' })
+        .addAttribution('ESRI Imagery')
+        .addTo(satMap);
+}
+
+// Function to update Satellite Marker value dynamically
+let satMarker = null;
+function updateSatMarker() {
+    if (!satMap) return;
+    const aqiVal = document.getElementById('current-aqi')?.textContent || '--';
+    
+    if (satMarker) {
+        satMap.removeLayer(satMarker);
+    }
+    
+    const stationIcon = L.divIcon({
+        className: 'sat-marker',
+        html: `<div class="sat-marker-inner">
+                   <div class="sat-marker-pulse"></div>
+                   <div class="sat-marker-dot">${aqiVal}</div>
+                   <div class="sat-marker-label">US Consulate<br>PM2.5 Station</div>
+               </div>`,
+        iconSize: [120, 80],
+        iconAnchor: [60, 40]
+    });
+    
+    satMarker = L.marker([10.7626, 106.6602], { icon: stationIcon }).addTo(satMap);
+}
+
+
+// Button toggle (from control bar)
+window.toggleSatelliteView = function() {
+    const container = document.getElementById('satelliteMapContainer');
+    const globeEl   = document.getElementById('globeViz');
+    const satBtn    = document.getElementById('btn-satellite');
+    
+    if (isSatelliteMode) {
+        container.style.opacity = '0';
+        setTimeout(() => {
+            container.style.display = 'none';
+            globeEl.style.display = 'block';
+            satBtn.classList.remove('active');
+            isSatelliteMode = false;
+            if (myGlobe) {
+                myGlobe.pointOfView({ lat: 10.7626, lng: 106.6602, altitude: 2.2 }, 1000);
+                myGlobe.controls().autoRotate = true;
+            }
+        }, 600);
+    } else {
+        globeEl.style.display = 'none';
+        container.style.display = 'block';
+        container.style.opacity = '0';
+        satBtn.classList.add('active');
+        isSatelliteMode = true;
+        
+        if (!satMap) { initSatelliteMap(); }
+        else { satMap.invalidateSize(); }
+        
+        requestAnimationFrame(() => { container.style.opacity = '1'; });
+    }
 };
 
