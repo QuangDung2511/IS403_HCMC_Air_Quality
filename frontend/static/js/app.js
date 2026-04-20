@@ -27,22 +27,43 @@ document.addEventListener('DOMContentLoaded', () => {
     markerEl.style.pointerEvents = 'auto'; // ensure interactions work
     templateContainer.innerHTML = ''; // clear template to maintain unique IDs
     
-    // Initialize 3D Globe
+    // Initialize 3D Globe with high-res textures
+    const globeContainer = document.getElementById('globeViz');
     myGlobe = Globe()
-      (document.getElementById('globeViz'))
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
-      .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+      (globeContainer)
+      .globeImageUrl('//unpkg.com/three-globe@2.41.12/example/img/earth-blue-marble.jpg')
+      .bumpImageUrl('//unpkg.com/three-globe@2.41.12/example/img/earth-topology.png')
       .backgroundColor('rgba(0,0,0,0)')
       .showAtmosphere(true)
       .atmosphereColor('#3b82f6')
-      .atmosphereAltitude(0.25)
+      .atmosphereAltitude(0.2)
+      .width(globeContainer.clientWidth)
+      .height(globeContainer.clientHeight)
       .htmlElementsData([{ lat: 10.7626, lng: 106.6602 }])
-      .htmlElement(() => markerEl);
+      .htmlElement(() => markerEl)
+      .ringsData([{ lat: 10.7626, lng: 106.6602, color: 'rgba(255, 126, 0, 0.6)' }])
+      .ringColor(d => d.color)
+      .ringMaxRadius(3)
+      .ringPropagationSpeed(2)
+      .ringRepeatPeriod(600)
+      // HCMC boundary polygon - initially hidden
+      .polygonsData([])
+      .polygonCapColor(() => 'rgba(255, 126, 0, 0.15)')
+      .polygonSideColor(() => 'rgba(255, 126, 0, 0.6)')
+      .polygonStrokeColor(() => 'rgba(255, 200, 50, 1)')
+      .polygonAltitude(0.025)
+      .polygonsTransitionDuration(1000);
 
-    // Initial camera position pointing at HCMC
-    myGlobe.pointOfView({ lat: 10.7626, lng: 106.6602, altitude: 2.0 });
+    // Dynamic resize handler
+    window.addEventListener('resize', () => {
+        myGlobe.width(globeContainer.clientWidth);
+        myGlobe.height(globeContainer.clientHeight);
+    });
+
+    // Premium Camera Position
+    myGlobe.pointOfView({ lat: 10.7626, lng: 106.6602, altitude: 2.2 }, 0);
     myGlobe.controls().autoRotate = true;
-    myGlobe.controls().autoRotateSpeed = 0.5;
+    myGlobe.controls().autoRotateSpeed = 0.3;
     
     fetchModelInfo();
     updateDashboard();
@@ -68,13 +89,6 @@ async function updateDashboard() {
             fetchForecastData(),
             fetchHistoryData()
         ]);
-        
-        // Update globe marker colors based on current AQI
-        const currentAqiBox = document.getElementById('marker-color-ring');
-        const markerAqi = document.getElementById('marker-aqi');
-        const popupBox = document.getElementById('popup-aqi-box');
-        
-        // The color is set in fetchCurrentData and applied to elements there
     } catch (error) {
         console.error("Error updating dashboard:", error);
     }
@@ -84,27 +98,55 @@ async function fetchCurrentData() {
     const res = await fetch('/api/current');
     const data = await res.json();
     
-    // Update Header
-    document.getElementById('current-time').textContent = data.timestamp;
+    // Update Header — show HH:MM in large Orbitron clock
+    // data.timestamp format: "DD/MM/YYYY HH:MM"
+    const timeEl = document.getElementById('current-time');
+    if (timeEl && data.timestamp) {
+        const parts = data.timestamp.split(' ');
+        timeEl.textContent = parts.length >= 2 ? parts[1] : data.timestamp;
+    }
     
     // Update Main Stats
     const aqiEl = document.getElementById('current-aqi');
     aqiEl.textContent = data.aqi;
     aqiEl.style.color = data.color;
-    aqiEl.style.textShadow = `0 0 20px ${data.color}80`; // Add glow
+
+    // PM2.5 + level in detail rows
+    const pm25El = document.getElementById('current-pm25');
+    if (pm25El) {
+        pm25El.innerHTML = `${data.pm25} <small>µg/m³</small>`;
+        pm25El.style.color = data.color;
+    }
+    const levelEl = document.getElementById('current-level');
+    if (levelEl) {
+        levelEl.textContent = data.level;
+        levelEl.style.color = data.color;
+    }
+
     
-    // Update Risk Card
+    // Update 24h Forecast Risk Card
+    const forecast24h = data.forecast_24h;
+    document.getElementById('forecast-24h-val').textContent = forecast24h;
+    document.getElementById('forecast-24h-val').style.color = data.color;
     document.getElementById('risk-percent').textContent = `${data.risk.percent}%`;
+    document.getElementById('risk-percent').style.color = data.color;
     document.getElementById('risk-desc').textContent = data.risk.description;
-    const riskCard = document.querySelector('.risk-card');
+    // Move dot indicator on the gradient bar (clamp to 2%–96% for visual padding)
+    const barPct = Math.min(96, Math.max(2, data.risk.percent));
+    document.getElementById('risk-bar-fill').style.left = `calc(${barPct}% - 7px)`;
+    document.getElementById('risk-bar-fill').style.boxShadow = `0 0 10px 2px ${data.color}`;
+
     
-    // Dynamic risk background
-    if(data.risk.percent > 70) {
-        riskCard.style.background = 'linear-gradient(135deg, rgba(80, 20, 20, 0.8), rgba(100, 30, 30, 0.6))';
-    } else if(data.risk.percent > 40) {
-        riskCard.style.background = 'linear-gradient(135deg, rgba(80, 60, 20, 0.8), rgba(100, 80, 30, 0.6))';
-    } else {
-        riskCard.style.background = 'linear-gradient(135deg, rgba(20, 30, 80, 0.8), rgba(30, 40, 100, 0.6))';
+    // Dynamically update the 3D surface ring glow covering the city
+    myGlobe.ringsData([{ lat: 10.7626, lng: 106.6602, color: data.color }]);
+    
+    // Update polygon boundary color if zoomed in
+    if (isZoomedIn) {
+        myGlobe
+            .polygonCapColor(() => 'rgba(255, 126, 0, 0.15)')
+            .polygonSideColor(() => 'rgba(255, 126, 0, 0.6)')
+            .polygonStrokeColor(() => 'rgba(255, 200, 50, 1)')
+            .polygonsData([HCMC_BOUNDARY]);
     }
     
     // Update Weather
@@ -118,12 +160,14 @@ async function fetchCurrentData() {
     markerNodes.aqi.style.background = data.color;
     markerNodes.ring.style.borderColor = data.color;
     
+    // Update CSS custom property for pulse/sparkle glow color
+    markerNodes.ring.style.boxShadow = `inset 0 0 20px ${data.color}`;
+    markerNodes.aqi.style.boxShadow = `0 0 30px 10px ${data.color}60, inset 0 0 15px rgba(255,255,255,0.8)`;
+    
     // Update Popup
     markerNodes.popupAqi.textContent = data.aqi;
     markerNodes.popupBox.style.background = data.color;
     markerNodes.popupLevel.textContent = data.level;
-    markerNodes.popupPm25.textContent = `PM2.5: ${data.pm25} µg/m³`;
-    markerNodes.popupPred.textContent = `${data.forecast_24h} µg/m³`;
     markerNodes.popupIcon.style.color = data.color;
 }
 
@@ -135,8 +179,8 @@ async function fetchForecastData() {
     
     // Create gradient
     const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(245, 158, 11, 0.5)'); // gold
-    gradient.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); // blue gradient
+    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
     
     if (forecastChart) {
         forecastChart.data.labels = data.labels;
@@ -258,14 +302,104 @@ async function fetchHistoryData() {
 async function fetchModelInfo() {
     const res = await fetch('/api/model-info');
     const data = await res.json();
-    
-    document.getElementById('model-name').textContent = data.model_name;
+
+    // Model badge (shorten display name)
+    document.getElementById('model-name').textContent = 'XGBoost Tuned';
+    // Hidden values kept for reference
     document.getElementById('m-rmse').textContent = data.metrics.rmse.toFixed(2);
-    document.getElementById('m-mae').textContent = data.metrics.mae.toFixed(2);
-    document.getElementById('m-mape').textContent = data.metrics.mape.toFixed(2);
+
+    // MAE in plain sentence: "within X µg/m³"
+    const mae = data.metrics.mae;
+    document.getElementById('m-mae').textContent = mae.toFixed(1);
+
+    // Compute intuitive accuracy % : score = (1 - MAE / 50) * 100
+    // 50 µg/m³ is used as "completely inaccurate" baseline for HCMC PM2.5 range
+    const accPct = Math.round(Math.max(0, Math.min(100, (1 - mae / 50) * 100)));
+    document.getElementById('intel-acc-pct').textContent = `${accPct}%`;
+
+    // Animate accuracy bar fill
+    const barEl = document.getElementById('intel-bar-fill');
+    if (barEl) {
+        // colour: green > 75%, yellow 50–75%, orange < 50%
+        const color = accPct >= 75 ? '#4ade80' : accPct >= 50 ? '#facc15' : '#fb923c';
+        barEl.style.width = `${accPct}%`;
+        barEl.style.background = `linear-gradient(to right, ${color}88, ${color})`;
+    }
 }
 
+// Simplified administrative boundary of Ho Chi Minh City (GeoJSON)
+const HCMC_BOUNDARY = {
+    type: "Feature",
+    properties: { name: "Hồ Chí Minh City", area: "Monitoring Zone" },
+    geometry: {
+        type: "Polygon",
+        coordinates: [[
+            [106.3637, 10.7538],
+            [106.3670, 10.8150],
+            [106.3890, 10.8680],
+            [106.4250, 10.9200],
+            [106.4800, 10.9620],
+            [106.5400, 10.9900],
+            [106.6050, 11.0050],
+            [106.6700, 11.0000],
+            [106.7300, 10.9750],
+            [106.7850, 10.9350],
+            [106.8250, 10.8800],
+            [106.8550, 10.8150],
+            [106.8750, 10.7500],
+            [106.8850, 10.6800],
+            [106.8800, 10.6100],
+            [106.8600, 10.5500],
+            [106.8250, 10.4950],
+            [106.7750, 10.4500],
+            [106.7150, 10.4150],
+            [106.6500, 10.3900],
+            [106.5800, 10.3800],
+            [106.5100, 10.3850],
+            [106.4450, 10.4050],
+            [106.3950, 10.4400],
+            [106.3600, 10.4900],
+            [106.3400, 10.5500],
+            [106.3350, 10.6200],
+            [106.3400, 10.6850],
+            [106.3637, 10.7538]
+        ]]
+    }
+};
+
+let isZoomedIn = false;
+
 // Interactivity 
+window.zoomToHCMC = function() {
+    if(!myGlobe) return;
+    
+    if (isZoomedIn) {
+        // Zoom back out and hide boundary
+        myGlobe.pointOfView({ lat: 10.7626, lng: 106.6602, altitude: 2.2 }, 1800);
+        myGlobe.polygonsData([]);
+        myGlobe.controls().autoRotate = true;
+        isZoomedIn = false;
+    } else {
+        // Set bright, clearly visible polygon colors
+        myGlobe
+            .polygonCapColor(() => 'rgba(255, 126, 0, 0.15)')
+            .polygonSideColor(() => 'rgba(255, 126, 0, 0.7)')
+            .polygonStrokeColor(() => 'rgba(255, 200, 50, 1)')
+            .polygonAltitude(0.025);
+        
+        // Zoom in and show HCMC boundary
+        myGlobe.pointOfView({ lat: 10.7626, lng: 106.6602, altitude: 0.4 }, 2000);
+        
+        // Show the boundary polygon after zoom has started
+        setTimeout(() => {
+            myGlobe.polygonsData([HCMC_BOUNDARY]);
+        }, 600);
+        
+        myGlobe.controls().autoRotate = false;
+        isZoomedIn = true;
+    }
+};
+
 window.zoomGlobe = function(dir) {
     if(!myGlobe) return;
     const currentR = myGlobe.pointOfView().altitude;
