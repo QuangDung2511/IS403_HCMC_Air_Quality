@@ -1,0 +1,48 @@
+\chapter{KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN}
+
+\section{Kết luận chung}
+
+Đồ án "Phân tích và dự báo chất lượng không khí (PM2.5) tại TP. Hồ Chí Minh" đã hoàn thành các mục tiêu đặt ra, từ việc thu thập, xử lý dữ liệu đến việc xây dựng và tối ưu hóa các mô hình dự báo hiện đại. Dựa trên các kết quả thực nghiệm và phân tích chuyên sâu tại Chương 5, nghiên cứu rút ra các kết luận quan trọng sau:
+
+\begin{enumerate}
+    \item \textbf{Về mặt kỹ thuật và mô hình hóa:} Dự án đã thực hiện so sánh đối sánh diện rộng giữa ba nhóm mô hình: Cây quyết định (Tree-based), Thống kê truyền thống (Econometrics) và Học sâu (Deep Learning). Kết quả cho thấy mô hình \textbf{Hybrid (SARIMAX-GRU)} đạt hiệu năng tối ưu nhất với chỉ số $RMSE = 17.2437$ và $MAE = 11.8945$. Việc kết hợp khả năng mô hình hóa thành phần tuyến tính, tính chu kỳ của SARIMAX với khả năng học sai số phi tuyến tính của mạng GRU đã tạo ra một hệ thống dự báo có độ chính xác và tính ổn định cao hơn so với việc sử dụng các mô hình đơn lẻ.
+
+    \item \textbf{Về các yếu tố tác động:} Thông qua việc phân tích độ quan trọng của đặc trưng (\textit{Feature Importance}) và các kiểm định thống kê, nghiên cứu đã khẳng định nồng độ PM2.5 tại TP. Hồ Chí Minh chịu ảnh hưởng chi phối bởi \textbf{tính mùa vụ}. Sự khác biệt rõ rệt về chất lượng không khí giữa mùa khô (ô nhiễm cao do nghịch nhiệt) và mùa mưa (được cải thiện nhờ hiệu ứng rửa trôi) là quy luật quan trọng nhất cần lưu ý trong công tác quản lý môi trường đô thị.
+
+    \item \textbf{Về các quy luật thời gian:} Nghiên cứu đã xác nhận sự tồn tại của \textbf{chu kỳ sinh hoạt 24 giờ} liên quan mật thiết đến lưu lượng giao thông và hoạt động công nghiệp. Các đỉnh ô nhiễm thường xuất hiện vào khung giờ cao điểm sáng và chiều, chứng minh rằng phát thải từ phương tiện giao thông vẫn là nguồn đóng góp chính vào ô nhiễm bụi mịn tại khu vực nghiên cứu.
+
+    \item \textbf{Về tính ứng dụng:} Khung phương pháp luận (Framework) được đề xuất trong đồ án, bao gồm các bước từ tiền xử lý dữ liệu chuỗi thời gian, lựa chọn biến ngoại sinh đến tối ưu hóa mô hình kết hợp, hoàn toàn có thể được mở rộng để áp dụng cho các trạm quan trắc khác hoặc các loại chất ô nhiễm khác (như $\text{NO}_2, \text{SO}_2$). Kết quả dự báo có độ tin cậy cao của mô hình Hybrid cung cấp cơ sở khoa học quan trọng cho việc đưa ra các cảnh báo sớm về ô nhiễm, giúp người dân và các cơ quan chức năng có biện pháp ứng phó kịp thời.
+\end{enumerate}
+
+Tóm lại, nghiên cứu đã thành công trong việc xây dựng một giải pháp dự báo PM2.5 có sự cân bằng giữa tính chính xác về mặt toán học và khả năng giải thích về mặt môi trường, đóng góp thiết thực vào nỗ lực giám sát và cải thiện chất lượng không khí tại TP. Hồ Chí Minh.
+
+\section{Hạn chế của đề tài}
+
+Mặc dù đã đạt được những kết quả khả quan trong việc dự báo nồng độ PM2.5, đề tài vẫn còn tồn tại một số hạn chế nhất định cần được nhìn nhận một cách khách quan:
+
+\begin{itemize}
+    \item \textbf{Dữ liệu quan trắc còn giới hạn về không gian:} Nghiên cứu chủ yếu dựa trên dữ liệu từ một số trạm quan trắc cố định, do đó kết quả dự báo có thể chưa phản ánh hoàn toàn sự phân hóa nồng độ bụi mịn tại các khu vực đặc thù khác trong thành phố (như các khu dân cư gần khu công nghiệp hoặc các nút giao thông cục bộ có địa hình phức tạp).
+    
+    \item \textbf{Phạm vi các biến đầu vào:} Mô hình hiện tại tập trung chủ yếu vào các biến khí tượng và các giá trị trễ thời gian. Các yếu tố có tác động trực tiếp và biến động mạnh như lưu lượng giao thông thời gian thực, mật độ xây dựng và các sự cố môi trường đột xuất chưa được tích hợp trực tiếp vào mạng Neural do hạn chế về nguồn dữ liệu công khai.
+    
+    \item \textbf{Độ phức tạp tính toán:} Mô hình Hybrid (SARIMAX-GRU) tuy có độ chính xác cao nhưng đòi hỏi tài nguyên tính toán lớn hơn và thời gian huấn luyện lâu hơn so với các mô hình thống kê truyền thống. Điều này có thể gây ra thách thức khi cần triển khai hệ thống dự báo thời gian thực trên các thiết bị phần cứng có cấu hình hạn chế (Edge computing).
+    
+    \item \textbf{Hiện tượng trễ trong dự báo các đỉnh cực trị:} Mặc dù đã sử dụng cơ chế Bidirectional GRU để cải thiện, mô hình vẫn còn gặp khó khăn nhất định trong việc bắt kịp các thay đổi đột ngột của nồng độ bụi trong các tình huống thời tiết cực đoan (như bão hoặc thay đổi hướng gió đột ngột trong thời gian ngắn), dẫn đến sai số tại các điểm đỉnh (\textit{peaks}) thường cao hơn mức trung bình.
+\end{itemize}
+
+\section{Hướng phát triển tương lai}
+
+Để khắc phục các hạn chế hiện tại và mở rộng tính ứng dụng của đề tài, các hướng phát triển trong tương lai được đề xuất bao gồm:
+
+\begin{itemize}
+    \item \textbf{Xây dựng mô hình không-thời gian (Spatiotemporal Modeling):} Mở rộng dữ liệu quan trắc sang mạng lưới nhiều trạm khác nhau và nghiên cứu áp dụng các kiến trúc mạng Neural đồ thị (Graph Neural Networks - GNN) để bắt được sự lan truyền ô nhiễm giữa các quận/huyện, cung cấp cái nhìn toàn diện hơn về bản đồ chất lượng không khí toàn thành phố.
+    
+    \item \textbf{Làm giàu dữ liệu đầu vào (Data Enrichment):} Tích hợp các nguồn dữ liệu đa dạng hơn vào mô hình dự báo như: lưu lượng giao thông thời gian thực từ API bản đồ, dữ liệu ảnh vệ tinh tầng thấp (Remote Sensing) và các chỉ số kinh tế - xã hội. Việc này sẽ giúp mô hình nhạy bén hơn với các biến động ngắn hạn do con người gây ra.
+    
+    \item \textbf{Ứng dụng các cơ chế tiên tiến như Attention và Transformer:} Nghiên cứu thay thế hoặc kết hợp khối GRU với cơ chế Attention (Chú ý) hoặc kiến trúc Transformer để cải thiện khả năng tập trung vào các sự cố ô nhiễm đột biến, từ đó giảm thiểu sai số tại các điểm cực trị.
+    
+    \item \textbf{Tối ưu hóa mô hình cho thiết bị cấu hình thấp:} Nghiên cứu các kỹ thuật nén mô hình (\textit{Model Quantization}) hoặc kiến trúc mạng Neural nhẹ (như MobileNet cho dữ liệu chuỗi thời gian) để triển khai trực tiếp vào các trạm quan trắc IoT cầm tay, giúp phổ cập việc giám sát chất lượng không khí đến từng cá nhân.
+    
+    \item \textbf{Phát triển hệ thống cảnh báo sớm và Dashboard tương tác:} Xây dựng một nền tảng web/mobile tích hợp kết quả dự báo thực tế, cho phép người dân tra cứu nồng độ PM2.5 dự kiến trong 24-48 giờ tới, kèm theo các khuyến nghị sức khỏe và lộ trình di chuyển an toàn.
+\end{itemize}
+

@@ -1,0 +1,54 @@
+\chapter{GIỚI THIỆU BÀI TOÁN}
+\section{Tính cấp thiết của đề tài}
+    \subsection{Tính cấp thiết của đề tài} \par 
+    Trong bối cảnh đô thị hóa và công nghiệp hóa diễn ra với tốc độ nhanh chóng, Thành phố Hồ Chí Minh (TP.HCM) đang đối mặt với những thách thức mang tính hệ thống đối với công tác quản lý chất lượng môi trường không khí. Sự gia tăng mật độ dân cư tập trung, đi cùng với sự mở rộng các hạ tầng giao thông và hoạt động sản xuất công nghiệp, đã trực tiếp làm biến đổi cấu trúc nồng độ các chất gây ô nhiễm trong khí quyển. Trong số các tác nhân ô nhiễm dạng hạt, bụi mịn PM2.5 (Particulate Matter có đường kính khí động học $\leq$ 2.5 $\mu$m) được xác định là chỉ số rủi ro quan yếu nhất \cite{Seinfeld2016}, với nồng độ thường xuyên ghi nhận mức vượt ngưỡng an toàn theo Quy chuẩn Kỹ thuật Quốc gia (QCVN) và các khuyến nghị sức khỏe từ Tổ chức Y tế Thế giới (WHO).
+    Về phương diện y sinh và độc học, bụi mịn PM2.5 sở hữu khả năng xuyên thấu sâu vào cấu trúc phế nang và thẩm thấu qua hàng rào máu – khí để đi vào hệ tuần hoàn. Quá trình này không chỉ gây ra các phản ứng viêm cấp tính mà còn là tác nhân gốc rễ của các bệnh lý mãn tính liên quan đến hệ hô hấp, tim mạch và các dạng bệnh lý ác tính, dẫn đến sự gia tăng tỷ lệ tử vong sớm trong cộng đồng \cite{Le2024}. Do đó, việc thiết lập cơ chế dự báo nồng độ PM2.5 dựa trên sự kết hợp của các phương pháp phân tích đa chiều đã trở thành một yêu cầu thiết yếu trong các chiến lược bảo vệ sức khỏe cộng đồng và phát triển an sinh xã hội bền vững.
+    
+    Sự bách thiết của nghiên cứu này còn xuất phát từ những hạn chế kỹ thuật trong công tác quản lý và giám sát chất lượng không khí hiện nay tại địa bàn thành phố:
+    
+    \begin{itemize}
+        \item \textbf{Hạn chế trong khả năng dự báo của hệ thống hiện hữu:} Phần lớn các hạ tầng quan trắc tại TP.HCM hiện nay tập trung vào việc thu thập và hiển thị dữ liệu thực tế tại thời điểm đo đạc. Tuy nhiên, các thông tin này chỉ mang tính chất mô tả trạng thái đã xảy ra mà thiếu đi khả năng dự báo các biến động trong tương lai ngắn hạn. Sự thiếu hụt các mô hình dự báo khiến cả cơ quan quản lý và người dân rơi vào trạng thái thụ động, hạn chế khả năng triển khai các biện pháp can thiệp sớm hoặc điều chỉnh hoạt động để giảm thiểu rủi ro tiếp xúc.
+        
+        \item \textbf{Sự chi phối phức tạp của các yếu tố khí tượng:} Nồng độ $PM_{2.5}$ không chỉ phụ thuộc vào nguồn phát thải tại chỗ mà còn chịu sự tác động bởi các tương tác phi tuyến tính của các yếu tố khí tượng vi mô như nhiệt độ, độ ẩm, tốc độ gió và độ cao tầng biên khí quyển (Boundary Layer Height). Đặc biệt, hiện tượng nghịch nhiệt thường xuyên xảy ra tại khu vực phía Nam đóng vai trò là tác nhân ngăn cản sự khuếch tán, dẫn đến tích tụ bụi mịn cục bộ với cường độ cao.
+    \end{itemize}
+    
+    Từ thực tế trên, việc ứng dụng các kỹ thuật tiên tiến trong Khoa học Dữ liệu và Học sâu (Deep Learning) để xây dựng mô hình dự báo nồng độ $PM_{2.5}$ trong khung thời gian 24 giờ tiếp theo là nhiệm vụ trọng tâm của nghiên cứu. Đề tài hướng tới việc tối ưu hóa độ chính xác thông qua tích hợp đa nguồn dữ liệu từ cảm biến IoT và hệ thống vệ tinh khí tượng, nhằm cung cấp cơ sở khoa học cho các hệ thống cảnh báo sớm. Kết quả nghiên cứu sẽ tạo ra một công cụ hỗ trợ ra quyết định dựa trên dữ liệu, phục vụ mục tiêu xây dựng mô hình đô thị thông minh và đảm bảo an toàn môi trường sống cho cư dân TP.HCM.
+    
+   \subsection{Định hướng nghiên cứu}
+    Nghiên cứu này định hướng triển khai các phương pháp dự báo tiên tiến nhằm giải quyết bài toán chuỗi thời gian đa biến (Multivariate Time-Series Forecasting). Trọng tâm của đề tài là xây dựng một hệ thống dự báo nồng độ bụi mịn PM2.5 có độ tin cậy và tính giải thích cao thông qua việc đối sánh và kết hợp ba nhóm phương pháp luận chủ đạo:
+    \begin{itemize}
+        \item \textbf{Nhóm mô hình thống kê truyền thống:} Được sử dụng để phân tích và nắm bắt các thành phần mùa vụ, xu hướng đặc thù và các mối liên hệ tuyến tính cơ bản trong dữ liệu chuỗi thời gian không khí.
+        \item \textbf{Nhóm mô hình học máy dựa trên cấu trúc cây:} Định hướng khai thác khả năng xử lý dữ liệu dạng bảng hiệu quả và xác định mức độ quan trọng của các đặc trưng khí tượng, từ đó giúp giải thích các nhân tố then chốt ảnh hưởng đến nồng độ PM2.5.
+        \item \textbf{Nhóm mô hình học sâu:} Ứng dụng các mạng nơ-ron hồi quy để mô hình hóa các phụ thuộc thời gian dài hạn và các mối quan hệ phi tuyến tính phức tạp trong các tập dữ liệu có độ phân giải cao.
+    \end{itemize}
+    Lộ trình nghiên cứu được xác lập dựa trên các trụ cột chính:
+    \begin{itemize}
+        \item \textbf{Tích hợp dữ liệu đa nguồn:} Kết hợp dữ liệu từ các cảm biến quan trắc chất lượng không khí với dữ liệu khí tượng bề mặt và khí quyển (như độ cao tầng biên, hướng gió) để tạo lập bộ đặc trưng dự báo toàn diện.
+        \item \textbf{Đối sánh và tối ưu hóa hiệu năng:} Thực hiện quy trình đánh giá nghiêm ngặt trên các tập dữ liệu độc lập để xác định ưu thế của từng phương pháp tiếp cận. Từ đó, nghiên cứu hướng tới việc đề xuất mô hình tối ưu hoặc các cấu trúc lai (Hybrid) nhằm tận dụng tối đa thế mạnh của từng nhóm thuật toán.
+        \item \textbf{Tự động hóa quy trình dự báo (End-to-End Pipeline):} Xây dựng hệ thống hoàn chỉnh từ khâu thu thập dữ liệu tự động cho đến khâu suy luận kết quả dự báo trong vòng 24 giờ tiếp theo, đảm bảo tính ứng dụng cao trong thực tế quản lý môi trường đô thị.
+    \end{itemize}
+    Thông qua việc kết hợp giữa nền tảng lý thuyết kiểm chứng và các kỹ thuật thực nghiệm hiện đại, nghiên cứu hướng tới việc tạo ra một khung giải pháp có khả năng dự báo chính xác diễn biến chất lượng không khí trong vòng 24 giờ tiếp theo. Kết quả nghiên cứu kỳ vọng sẽ đóng góp vào hệ thống tri thức về quản lý môi trường đô thị và hỗ trợ các giải pháp công nghệ phục vụ sức khỏe cộng đồng.
+
+\section{Mục tiêu nghiên cứu}
+    \subsection{Mục tiêu tổng quát:} Mục tiêu cốt lõi của nghiên cứu là thiết lập và chuẩn hóa một hệ thống dự báo nồng độ bụi mịn PM2.5 tại khu vực Thành phố Hồ Chí Minh với độ chính xác cao trong khung thời gian 24 giờ tiếp theo. Thông qua việc tích hợp các phương pháp luận từ khoa học dữ liệu hiện đại, nghiên cứu hướng tới việc xây dựng một cơ sở khoa học tin cậy cho các cơ chế cảnh báo sớm về ô nhiễm không khí. Kết quả của đề tài dự kiến sẽ cung cấp công cụ hỗ trợ các bên liên quan trong việc ra quyết định dựa trên dữ liệu, từ đó góp phần giảm thiểu các rủi ro sức khỏe cộng đồng và nâng cao chất lượng môi trường sống trong môi trường đô thị.
+    
+    \subsection{Mục tiêu cụ thể:}
+    Để hiện thực hóa mục tiêu tổng quát, nghiên cứu xác lập các mục tiêu cụ thể theo lộ trình triển khai như sau:
+    \begin{itemize}
+        \item \textbf{Xây dựng và đồng bộ hóa cơ sở dữ liệu:} Thực hiện thu thập dữ liệu về nồng độ chất ô nhiễm và các biến số khí tượng từ nền tảng OpenAQ và Open-Meteo API tại khu vực TP.HCM. Mục tiêu là thiết lập một tập dữ liệu sạch, có độ phân giải theo giờ và đảm bảo tính liên tục từ tháng 11/2024 đến tháng 02/2026.
+        \item \textbf{Phân tích khám phá và trích xuất tri thức (EDA):} Nhận diện các quy luật phân bố của PM2.5 theo các chu kỳ thời gian (giờ trong ngày, ngày trong tuần, tính mùa vụ) và phân tích định lượng mối tương quan giữa các yếu tố khí tượng đối với cơ chế tích tụ hoặc khuếch tán của bụi mịn.
+        \item \textbf{Triển khai kiến trúc mô hình hóa đa phương pháp:} Thiết kế, huấn luyện và tối ưu hóa hệ thống các mô hình dự báo bao gồm: nhóm thống kê (ARIMA, ARIMAX, SARIMA, SARIMAX), nhóm học máy dựa trên cấu trúc cây (Random Forest, XGBoost, LightGBM) và nhóm mạng nơ-ron hồi quy (LSTM, GRU).
+        \item \textbf{Đánh giá và đối sánh năng lực dự báo:} Áp dụng các chỉ số đo lường sai số tiêu chuẩn (như RMSE, MAE, MAPE) để đánh giá định lượng hiệu năng của các mô hình trên các tập dữ liệu độc lập. Từ đó, xác định cấu trúc tối ưu hoặc đề xuất các phương pháp lai nhằm nâng cao độ tin cậy của kết quả dự báo.
+        \item \textbf{Đề xuất khung quy trình vận hành tự động:} Thiết kế kiến trúc hệ thống (Pipeline) có khả năng tự động hóa các khâu từ thu thập dữ liệu đến suy luận dự báo, tạo tiền đề kỹ thuật cho việc triển khai các ứng dụng cảnh báo chất lượng không khí trong thực tế.
+    \end{itemize}
+    \section{Đối tượng và phạm vi nghiên cứu}
+    \subsection{Đối tượng nghiên cứu}
+    Đối tượng nghiên cứu trọng tâm của đề tài là sự biến động nồng độ của bụi mịn PM2.5 trong tầng khí quyển bề mặt tại khu vực Thành phố Hồ Chí Minh. Về mặt khoa học, bụi mịn PM2.5 được định nghĩa là các hạt vật chất lơ lửng trong không khí có đường kính khí động học nhỏ hơn hoặc bằng 2,5 micromet ($\mu$m) \cite{Seinfeld2016}. Theo các tiêu chuẩn quốc tế từ Cục Bảo vệ Môi trường Hoa Kỳ (EPA) và Tổ chức Y tế Thế giới (WHO), do kích thước siêu nhỏ, các hạt này sở hữu khả năng thâm nhập sâu vào cấu trúc phế nang và hệ thống mạch máu, đồng thời có thời gian lưu tại khí quyển lâu hơn so với các hạt bụi có kích thước lớn.
+    Nghiên cứu thực hiện phân tích các quy luật phụ thuộc và mối quan hệ tương tác (bao gồm cả tuyến tính và phi tuyến tính) giữa nồng độ PM2.5 với chuỗi các thông số khí tượng động học như nhiệt độ, độ ẩm tương đối, áp suất bề mặt, tốc độ gió, hướng gió và độ cao tầng biên khí quyển \cite{Tai2010}. 
+    \subsection{Phạm vi nghiên cứu}
+    Đề tài được xác lập giới hạn thực hiện trong các phạm vi cụ thể sau:
+    \begin{itemize}
+        \item \textbf{Phạm vi không gian:} Khu vực Thành phố Hồ Chí Minh. Dữ liệu quan trắc được thu thập từ các trạm đại diện cho chất lượng không khí đô thị, phản ánh đặc trưng của một siêu đô thị đang phát triển.
+        \item \textbf{Phạm vi thời gian:} Tập dữ liệu phục vụ huấn luyện và đánh giá mô hình được giới hạn trong khoảng thời gian từ tháng 11/2024 đến tháng 02/2026. Đây là giai đoạn cung cấp đủ độ dài dữ liệu (data length) để thực hiện các phân tích về tính chu kỳ và mô hình hóa các xu hướng biến động của bụi mịn.
+        \item \textbf{Phạm vi nội dung:} Nghiên cứu tập trung giải quyết bài toán dự báo nồng độ bụi mịn PM2.5 trong ngắn hạn (khung thời gian 24 giờ tiếp theo). Nội dung bao hàm việc thiết kế và đối sánh hiệu năng giữa các nhóm thuật toán Thống kê, Học máy dựa trên cấu trúc cây và Học sâu nhằm xác lập phương pháp tối ưu cho cấu trúc dữ liệu chuỗi thời gian đa biến.
+    \end{itemize}

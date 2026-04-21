@@ -29,3 +29,21 @@ outputs/figures/*
 outputs/predictions/*
 !outputs/predictions/.gitkeep
 .Rproj.user
+
+# 7. LaTeX auxiliary files
+report/*.aux
+report/*.bbl
+report/*.blg
+report/*.log
+report/*.out
+report/*.toc
+report/*.fls
+report/*.fdb_latexmk
+report/*.synctex.gz
+report/*.lof
+report/*.lot
+
+# 8. Temporary scratch files and logs
+scratch/
+all_files.txt
+

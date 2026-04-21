@@ -1,3 +1,4 @@
+%!TEX program = lualatex
 \documentclass[12pt, a4paper]{report}
 
 % --- Packages ---
@@ -52,7 +53,7 @@
     {\large \textbf{TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN}}\\[1.5cm]
     
     % Bỏ comment dòng dưới nếu có logo
-    \includegraphics[scale=0.7]{report/logo-uit.png}\\[1.5cm] 
+    \includegraphics[scale=0.7]{logo-uit.png}\\[1.5cm] 
     
     {\Large \textbf{KHOA HỆ THỐNG THÔNG TIN}}\\[0.5cm]
     {\large \textbf{IS403 - PHÂN TÍCH DỮ LIỆU KINH DOANH}}\\[1cm]
@@ -83,7 +84,7 @@
     \end{minipage}
     
     \vfill
-    {\large TP. Hồ Chí Minh, 2024}
+    {\large TP. Hồ Chí Minh, 2026}
 \end{titlepage}
 
 % --- Khôi phục lại margin ban đầu (trái 3cm) để đóng gáy ---
@@ -102,13 +103,13 @@
 \begin{table}[h!]
     \centering
     \renewcommand{\arraystretch}{1.5}
-    \begin{tabularx}{\textwidth}{|c|l|X|c|}
+    \begin{tabularx}{\textwidth}{|c|l|X|}
         \hline
-        \textbf{STT} & \textbf{Họ và Tên} & \textbf{Nhiệm vụ đảm nhiệm} & \textbf{Hoàn thành} \\ \hline
-        1 & Nguyễn Quang Dũng & Nhóm trưởng. Trực tiếp thực hiện EDA, ... & 100\% \\ \hline
-        2 & Trần Nguyễn Tiến Đức & ... & 100\% \\ \hline
-        3 & Trần Anh Đức & ... & 100\% \\ \hline
-        4 & Trần Quốc Bảo & ... & 100\% \\ \hline
+        \textbf{STT} & \textbf{Họ và Tên} & \textbf{Nhiệm vụ đảm nhiệm} \\ \hline
+        1 & Nguyễn Quang Dũng & Nhóm trưởng, crawl dữ liệu, làm sạch dữ liệu, thêm insights cho EDA, kỹ thuật đặc trưng, nhóm mô hình thống kê, nhóm mô hình học sâu, mô hình kết hợp, viết báo cáo. \\ \hline
+        2 & Trần Nguyễn Tiến Đức & Phân chia dữ liệu, lựa chọn đặc trưng, biến đổi và chuẩn hóa dữ liệu, nhóm mô hình dạng cây, tạo mạch dữ liệu real-time + demo. \\ \hline
+        3 & Trần Anh Đức & EDA, nhóm mô hình thống kê, nhóm mô hình học sâu, thực hiện code rscript, slide thuyết trình. \\ \hline
+        4 & Trần Quốc Bảo & EDA, nhóm mô hình dạng cây, thực hiện code rscript, viết báo cáo, slide thuyết trình. \\ \hline
     \end{tabularx}
 \end{table}
 
@@ -116,471 +117,22 @@
 \pagenumbering{arabic}
 
 % -- CHƯƠNG 1
-\chapter{GIỚI THIỆU BÀI TOÁN}
-\section{Tính cấp thiết của đề tài}
-\subsection{Tính cấp thiết của đề tài}
-
-Trong bối cảnh đô thị hóa và công nghiệp hóa diễn ra với tốc độ nhanh chóng, Thành phố Hồ Chí Minh (TP.HCM) đang đối mặt với những thách thức mang tính hệ thống đối với công tác quản lý chất lượng môi trường không khí. Sự gia tăng mật độ dân cư tập trung, đi cùng với sự mở rộng các hạ tầng giao thông và hoạt động sản xuất công nghiệp, đã trực tiếp làm biến đổi cấu trúc nồng độ các chất gây ô nhiễm trong khí quyển. Trong số các tác nhân ô nhiễm dạng hạt, bụi mịn PM2.5 (Particulate Matter có đường kính khí động học $\leq$ 2.5 $\mu$m) được xác định là chỉ số rủi ro quan yếu nhất \cite{Seinfeld2016}, với nồng độ thường xuyên ghi nhận mức vượt ngưỡng an toàn theo Quy chuẩn Kỹ thuật Quốc gia (QCVN) và các khuyến nghị sức khỏe từ Tổ chức Y tế Thế giới (WHO).
-
-Về phương diện y sinh và độc học, bụi mịn PM2.5 sở hữu khả năng xuyên thấu sâu vào cấu trúc phế nang và thẩm thấu qua hàng rào máu – khí để đi vào hệ tuần hoàn. Quá trình này không chỉ gây ra các phản ứng viêm cấp tính mà còn là tác nhân gốc rễ của các bệnh lý mãn tính liên quan đến hệ hô hấp, tim mạch và các dạng bệnh lý ác tính, dẫn đến sự gia tăng tỷ lệ tử vong sớm trong cộng đồng \cite{Le2024}. Do đó, việc thiết lập cơ chế dự báo nồng độ PM2.5 dựa trên sự kết hợp của các phương pháp phân tích đa chiều đã trở thành một yêu cầu thiết yếu trong các chiến lược bảo vệ sức khỏe cộng đồng và phát triển an sinh xã hội bền vững.
-
-Sự bách thiết của nghiên cứu này còn xuất phát từ những hạn chế kỹ thuật trong công tác giám sát hiện nay:
-\begin{itemize}
-    \item \textbf{Hạn chế trong khả năng dự báo của hệ thống hiện hữu:} Phần lớn các hạ tầng quan trắc tại TP.HCM hiện nay tập trung vào việc hiển thị dữ liệu thực tế tại thời điểm đo đạc, thiếu đi khả năng dự báo các biến động trong tương lai ngắn hạn. Điều này làm hạn chế khả năng triển khai các biện pháp can thiệp sớm nhằm giảm thiểu rủi ro tiếp xúc.
-    \item \textbf{Sự chi phối phức tạp và phi tuyến tính:} Nồng độ PM2.5 chịu sự tác động phức tạp bởi các tương tác giữa nguồn phát thải và các yếu tố khí tượng vi mô (nhiệt độ, độ ẩm, nghịch nhiệt). Tính phức tạp này đòi hỏi việc ứng dụng đồng thời nhiều phương pháp luận từ thống kê đến học máy hiện đại để có thể bao quát được toàn bộ các quy luật biến động của dữ liệu.
-\end{itemize}
-
-\subsection{Định hướng nghiên cứu}
-
-Nghiên cứu này định hướng triển khai các phương pháp dự báo tiên tiến nhằm giải quyết bài toán chuỗi thời gian đa biến (Multivariate Time-Series Forecasting). Trọng tâm của đề tài là xây dựng một hệ thống dự báo nồng độ bụi mịn PM2.5 có độ tin cậy và tính giải thích cao thông qua việc đối sánh và kết hợp ba nhóm phương pháp luận chủ đạo:
-
-\begin{itemize}
-    \item \textbf{Nhóm mô hình thống kê truyền thống (ARIMA, ARIMAX, SARIMA, SARIMAX):} Được sử dụng để phân tích và nắm bắt các thành phần mùa vụ, xu hướng đặc thù và các mối liên hệ tuyến tính cơ bản trong dữ liệu chuỗi thời gian không khí.
-    \item \textbf{Nhóm mô hình học máy dựa trên cấu trúc cây (Random Forest, XGBoost, LightGBM):} Định hướng khai thác khả năng xử lý dữ liệu dạng bảng hiệu quả và xác định mức độ quan trọng của các đặc trưng khí tượng, từ đó giúp giải thích các nhân tố then chốt ảnh hưởng đến nồng độ PM2.5.
-    \item \textbf{Nhóm mô hình học sâu (LSTM, GRU):} Ứng dụng các mạng nơ-ron hồi quy để mô hình hóa các phụ thuộc thời gian dài hạn và các mối quan hệ phi tuyến tính phức tạp trong các tập dữ liệu có độ phân giải cao.
-\end{itemize}
-
-Lộ trình nghiên cứu được xác lập dựa trên các trụ cột chính:
-\begin{itemize}
-    \item \textbf{Tích hợp dữ liệu đa nguồn:} Kết hợp dữ liệu từ các cảm biến quan trắc chất lượng không khí với dữ liệu khí tượng bề mặt và khí quyển (như độ cao tầng biên, hướng gió) để tạo lập bộ đặc trưng dự báo toàn diện.
-    \item \textbf{Đối sánh và tối ưu hóa hiệu năng:} Thực hiện quy trình đánh giá nghiêm ngặt trên các tập dữ liệu độc lập để xác định ưu thế của từng phương pháp tiếp cận. Từ đó, nghiên cứu hướng tới việc đề xuất mô hình tối ưu hoặc các cấu trúc lai (Hybrid) nhằm tận dụng tối đa thế mạnh của từng nhóm thuật toán.
-    \item \textbf{Tự động hóa quy trình dự báo (End-to-End Pipeline):} Xây dựng hệ thống hoàn chỉnh từ khâu thu thập dữ liệu tự động cho đến khâu suy luận kết quả dự báo trong vòng 24 giờ tiếp theo, đảm bảo tính ứng dụng cao trong thực tế quản lý môi trường đô thị.
-\end{itemize}
-
-Thông qua việc kết hợp giữa nền tảng lý thuyết kiểm chứng và các kỹ thuật thực nghiệm hiện đại, nghiên cứu hướng tới việc tạo ra một khung giải pháp có khả năng dự báo chính xác diễn biến chất lượng không khí trong vòng 24 giờ tiếp theo. Kết quả nghiên cứu kỳ vọng sẽ đóng góp vào hệ thống tri thức về quản lý môi trường đô thị và hỗ trợ các giải pháp công nghệ phục vụ sức khỏe cộng đồng.
-
-\section{Mục tiêu nghiên cứu}
-\subsection{Mục tiêu tổng quát}
-
-Mục tiêu cốt lõi của nghiên cứu là thiết lập và chuẩn hóa một hệ thống dự báo nồng độ bụi mịn PM2.5 tại khu vực Thành phố Hồ Chí Minh với độ chính xác cao trong khung thời gian 24 giờ tiếp theo. Thông qua việc tích hợp các phương pháp luận từ khoa học dữ liệu hiện đại, nghiên cứu hướng tới việc xây dựng một cơ sở khoa học tin cậy cho các cơ chế cảnh báo sớm về ô nhiễm không khí. Kết quả của đề tài dự kiến sẽ cung cấp công cụ hỗ trợ các bên liên quan trong việc ra quyết định dựa trên dữ liệu, từ đó góp phần giảm thiểu các rủi ro sức khỏe cộng đồng và nâng cao chất lượng môi trường sống trong môi trường đô thị.
-
-\subsection{Mục tiêu cụ thể}
-
-Để hiện thực hóa mục tiêu tổng quát, nghiên cứu xác lập các mục tiêu cụ thể theo lộ trình triển khai như sau:
-\begin{itemize}
-    \item \textbf{Xây dựng và đồng bộ hóa cơ sở dữ liệu:} Thực hiện thu thập dữ liệu về nồng độ chất ô nhiễm và các biến số khí tượng từ nền tảng OpenAQ và Open-Meteo API tại khu vực TP.HCM. Mục tiêu là thiết lập một tập dữ liệu sạch, có độ phân giải theo giờ và đảm bảo tính liên tục từ tháng 11/2024 đến tháng 02/2026.
-    \item \textbf{Phân tích khám phá và trích xuất tri thức (EDA):} Nhận diện các quy luật phân bố của PM2.5 theo các chu kỳ thời gian (giờ trong ngày, ngày trong tuần, tính mùa vụ) và phân tích định lượng mối tương quan giữa các yếu tố khí tượng đối với cơ chế tích tụ hoặc khuếch tán của bụi mịn.
-    \item \textbf{Triển khai kiến trúc mô hình hóa đa phương pháp:} Thiết kế, huấn luyện và tối ưu hóa hệ thống các mô hình dự báo bao gồm: nhóm thống kê (ARIMA, ARIMAX, SARIMA, SARIMAX), nhóm học máy dựa trên cấu trúc cây (Random Forest, XGBoost, LightGBM) và nhóm mạng nơ-ron hồi quy (LSTM, GRU).
-    \item \textbf{Đánh giá và đối sánh năng lực dự báo:} Áp dụng các chỉ số đo lường sai số tiêu chuẩn (như RMSE, MAE, MAPE) để đánh giá định lượng hiệu năng của các mô hình trên các tập dữ liệu độc lập. Từ đó, xác định cấu trúc tối ưu hoặc đề xuất các phương pháp lai nhằm nâng cao độ tin cậy của kết quả dự báo.
-    \item \textbf{Đề xuất khung quy trình vận hành tự động:} Thiết kế kiến trúc hệ thống (Pipeline) có khả năng tự động hóa các khâu từ thu thập dữ liệu đến suy luận dự báo, tạo tiền đề kỹ thuật cho việc triển khai các ứng dụng cảnh báo chất lượng không khí trong thực tế.
-\end{itemize}
-\section{Đối tượng và Phạm vi nghiên cứu}
-\subsection{Đối tượng nghiên cứu}
-
-Đối tượng nghiên cứu trọng tâm của đề tài là sự biến động nồng độ của bụi mịn PM2.5 trong tầng khí quyển bề mặt tại khu vực Thành phố Hồ Chí Minh. Về mặt khoa học, bụi mịn PM2.5 được định nghĩa là các hạt vật chất lơ lửng trong không khí có đường kính khí động học nhỏ hơn hoặc bằng 2,5 micromet ($\mu$m) \cite{Seinfeld2016}. Theo các tiêu chuẩn quốc tế từ Cục Bảo vệ Môi trường Hoa Kỳ (EPA) và Tổ chức Y tế Thế giới (WHO), do kích thước siêu nhỏ, các hạt này sở hữu khả năng thâm nhập sâu vào cấu trúc phế nang và hệ thống mạch máu, đồng thời có thời gian lưu tại khí quyển lâu hơn so với các hạt bụi có kích thước lớn.
-
-Nghiên cứu thực hiện phân tích các quy luật phụ thuộc và mối quan hệ tương tác (bao gồm cả tuyến tính và phi tuyến tính) giữa nồng độ PM2.5 với chuỗi các thông số khí tượng động học như nhiệt độ, độ ẩm tương đối, áp suất bề mặt, tốc độ gió, hướng gió và độ cao tầng biên khí quyển \cite{Tai2010}. 
-
-\subsection{Phạm vi nghiên cứu}
-
-Đề tài được xác lập giới hạn thực hiện trong các phạm vi cụ thể sau:
-\begin{itemize}
-    \item \textbf{Phạm vi không gian:} Khu vực Thành phố Hồ Chí Minh. Dữ liệu quan trắc được thu thập từ các trạm đại diện cho chất lượng không khí đô thị, phản ánh đặc trưng của một siêu đô thị đang phát triển.
-    \item \textbf{Phạm vi thời gian:} Tập dữ liệu phục vụ huấn luyện và đánh giá mô hình được giới hạn trong khoảng thời gian từ tháng 11/2024 đến tháng 02/2026. Đây là giai đoạn cung cấp đủ độ dài dữ liệu (data length) để thực hiện các phân tích về tính chu kỳ và mô hình hóa các xu hướng biến động của bụi mịn.
-    \item \textbf{Phạm vi nội dung:} Nghiên cứu tập trung giải quyết bài toán dự báo nồng độ bụi mịn PM2.5 trong ngắn hạn (khung thời gian 24 giờ tiếp theo). Nội dung bao hàm việc thiết kế và đối sánh hiệu năng giữa các nhóm thuật toán Thống kê, Học máy dựa trên cấu trúc cây và Học sâu nhằm xác lập phương pháp tối ưu cho cấu trúc dữ liệu chuỗi thời gian đa biến.
-\end{itemize}
-\
+\input{Chuong1}
 % -- CHƯƠNG 2
-\chapter{CƠ SỞ LÝ THUYẾT}
-\section{Các yếu tố khí tượng ảnh hưởng đến PM2.5}
-
-Sự biến động nồng độ bụi mịn PM2.5 trong khí quyển không chỉ phụ thuộc vào cường độ phát thải từ các nguồn nhân tạo mà còn chịu sự chi phối mạnh mẽ bởi các điều kiện khí tượng. Các điều kiện này quyết định khả năng tích tụ, khuếch tán, vận chuyển và loại bỏ các hạt vật chất trong không gian đô thị \cite{Jacob2009}. Để xây dựng mô hình dự báo chính xác, nghiên cứu thực hiện khai thác dữ liệu từ hai nền tảng dữ liệu mở uy tín, cung cấp các thông số đặc trưng cho chất lượng không khí và động lực học khí quyển.
-
-\subsection{Dữ liệu Chất lượng không khí (OpenAQ)}
-
-OpenAQ là nền tảng dữ liệu mở toàn cầu, chuyên tổng hợp và chuẩn hóa dữ liệu chất lượng không khí thời gian thực từ các hệ thống cảm biến IoT (Internet of Things). Nghiên cứu thực hiện trích xuất chuỗi nồng độ bụi mịn PM2.5 ($\mu$g/m$^3$) làm đại diện cho chỉ số mục tiêu. Việc dự báo nồng độ PM2.5 trong khung thời gian 24 giờ tiếp theo được xác định là nhiệm vụ trọng tâm, đóng vai trò nền tảng cho việc thiết lập các cơ chế cảnh báo sớm nhằm giảm thiểu rủi ro sức khỏe cộng đồng.
-
-\subsection{Dữ liệu Khí tượng (Open-Meteo API)}
-
-Open-Meteo API cung cấp dữ liệu khí tượng dựa trên các mô hình tái phân tích hiện đại, tiêu biểu là mô hình ERA5 của Trung tâm Dự báo Thời tiết Tầm trung Châu Âu (ECMWF). Nghiên cứu tích hợp 08 đặc trưng khí tượng được xác định là có ảnh hưởng quyết định đến khả năng tích tụ và khuếch tán của PM2.5 \cite{Tai2010}:
-\begin{itemize}
-    \item \textbf{Cơ chế nhiệt và ẩm:} Bao gồm nhiệt độ (2m), độ ẩm tương đối và lượng mưa. Các yếu tố này tác động đến sự biến đổi lý tính của hạt bụi và hỗ trợ cơ chế rửa trôi khí quyển tự nhiên.
-    \item \textbf{Cơ chế động lực học:} Tốc độ gió, hướng gió và áp suất bề mặt. Đây là các tác nhân trực tiếp tham gia vào quá trình pha loãng và vận chuyển chất ô nhiễm theo phương ngang.
-    \item \textbf{Cơ chế ổn định khí quyển:} Nhiệt độ ở độ cao 180m và độ cao tầng biên khí quyển (Boundary Layer Height). Các chỉ số này cho phép nhận diện trạng thái ổn định của lớp không khí sát đất, nơi PM2.5 có xu hướng tích tụ nồng độ cao khi không gian khuếch tán theo phương thẳng đứng bị giới hạn.
-\end{itemize}
-
-\section{Ứng dụng học máy trong dự báo chất lượng không khí}
-
-Trong những năm gần đây, phương pháp tiếp cận bài toán dự báo chất lượng không khí đã có sự chuyển dịch mạnh mẽ từ các mô hình mô phỏng hóa lý truyền thống sang các hướng tiếp cận dựa trên dữ liệu (Data-driven). Sự kết hợp giữa các phương pháp thống kê học cổ điển và các thuật toán học máy hiện đại cho phép khai thác hiệu quả các quy luật phức tạp ẩn trong chuỗi dữ liệu nồng độ PM2.5.
-
-\subsection{Nhóm mô hình thống kê (ARIMA, ARIMAX, SARIMA, SARIMAX)}
-
-Các mô hình thống kê tự hồi quy đóng vai trò là nền tảng trong phân tích chuỗi thời gian nhờ tính minh bạch và khả năng diễn giải toán học cao. Nghiên cứu thực hiện đối sánh trên 04 biến thể chính:
-\begin{itemize}
-    \item \textbf{ARIMA (Autoregressive Integrated Moving Average):} Mô hình cơ bản kết hợp giữa thành phần tự hồi quy (AR), sai phân tích hợp (I) để đưa chuỗi về tính dừng, và trung bình trượt (MA) để xử lý sai số dự báo.
-    \item \textbf{ARIMAX:} Mở rộng từ ARIMA bằng cách tích hợp trực tiếp các biến ngoại sinh (Exogenous variables). Điều này cho phép mô hình xem xét các tác động từ bên ngoài như yếu tố khí tượng đồng thời với quy luật của chính chuỗi PM2.5.
-    \item \textbf{SARIMA (Seasonal ARIMA):} Biến thể bổ sung các tham số mùa vụ để nắm bắt các quy luật lặp lại theo chu kỳ (ví dụ: chu kỳ ngày-đêm hoặc mùa vụ trong năm) thường thấy trong dữ liệu chất lượng không khí.
-    \item \textbf{SARIMAX:} Là cấu trúc phức tạp nhất trong nhóm này, kết hợp đầy đủ các thành phần tự hồi quy, tích hợp, trung bình trượt cùng với các đặc tính mùa vụ và tác động của các biến ngoại sinh. Đây là mô hình thống kê chủ đạo được sử dụng để đối sánh hiệu năng trong nghiên cứu.
-\end{itemize}
-
-\subsection{Nhóm mô hình dựa trên cấu trúc cây (Random Forest, Gradient Boosting)}
-
-Các thuật toán dựa trên cây quyết định (Decision Trees) đặc biệt hiệu quả trong việc xử lý các quan hệ phi tuyến tính và các tập dữ liệu có nhiều biến số tương tác phức tạp.
-\begin{itemize}
-    \item \textbf{Random Forest:} Sử dụng kỹ thuật Bagging và chọn lọc đặc trưng ngẫu nhiên để xây dựng tập hợp nhiều cây quyết định độc lập. Phương pháp này giúp giảm thiểu hiện tượng quá khớp (overfitting) và tăng cường độ bền vững cho dự báo.
-    \item \textbf{XGBoost và LightGBM:} Dựa trên cơ chế Gradient Boosting, các thuật toán này xây dựng các cây quyết định tuần tự nhằm tối ưu hóa hàm mục tiêu. Chúng nổi bật với tốc độ huấn luyện cao, khả năng xử lý dữ liệu quy mô lớn và cung cấp khả năng đánh giá mức độ đóng góp của từng đặc trưng (Feature Importance), giúp nhận diện các nhân tố khí tượng ảnh hưởng nhất đến PM2.5.
-\end{itemize}
-
-\subsection{Nhóm mạng nơ-ron hồi quy (LSTM, GRU)}
-
-Đối với dữ liệu chuỗi thời gian có các đặc trưng phụ thuộc dài hạn, các kiến trúc mạng nơ-ron tái phát (RNN) là lựa chọn tối ưu nhờ khả năng ghi nhớ thông tin qua các bước thời gian.
-\begin{itemize}
-    \item \textbf{LSTM (Long Short-Term Memory):} Sử dụng cơ chế các cổng (Input, Forget, Output gates) để điều soát dòng thông tin đi qua các trạng thái ẩn. Cấu trúc này giải quyết hiệu quả vấn đề triệt tiêu đạo hàm (vanishing gradient), cho phép mô hình học được các quy luật biến động kéo dài trong chuỗi dữ liệu không khí.
-    \item \textbf{GRU (Gated Recurrent Unit):} Là biến thể tinh giản của LSTM, kết hợp các cổng thành cấu trúc Update gate và Reset gate. GRU giúp tối ưu hóa hiệu năng tính toán và thời gian huấn luyện trong khi vẫn duy trì được năng lực dự báo tương đương với LSTM.
-\end{itemize}
-
+\input{Chuong2}
 % -- CHƯƠNG 3
-\chapter{DỮ LIỆU VÀ QUY TRÌNH PHÂN TÍCH}
-\section{Dữ liệu thô (Raw Data)}
-
-Dữ liệu thô của nghiên cứu được tổng hợp và đồng bộ hóa từ hai nguồn API chính, tạo thành một tập dữ liệu chuỗi thời gian hợp nhất với độ phân giải theo giờ (hourly resolution). Tập dữ liệu bao phủ giai đoạn từ tháng 11/2024 đến tháng 02/2026 tại khu vực Thành phố Hồ Chí Minh.
-
-\subsection{Dữ liệu nồng độ bụi từ OpenAQ}
-
-Dữ liệu nồng độ chất ô nhiễm được thu thập thông qua giao diện lập trình ứng dụng (API) của nền tảng OpenAQ (phiên bản V3). Nghiên cứu thực hiện truy vấn dữ liệu từ trạm quan trắc đặt tại Lãnh sự quán Hoa Kỳ tại TP.HCM (Location ID: 3276359), trạm quan trắc này được lựa chọn nhờ tính ổn định và độ tin cậy cao của dữ liệu trong khu vực đô thị.
-
-Các đặc trưng thô được trích xuất trực tiếp từ quy trình thu thập bao gồm:
-\begin{itemize}
-    \item \textbf{Nhóm nồng độ bụi mịn:} `pm25`, `pm10`, `pm1` ($\mu$g/m$^3$) và chỉ số đếm hạt bụi siêu mịn `um003`. Trong đó, `pm25` đóng vai trò là biến số cốt lõi để xây dựng biến mục tiêu cho mô hình dự báo.
-    \item \textbf{Nhóm bổ trợ tại trạm:} Các cảm biến tại trạm cung cấp thêm thông số về `temperature` (nhiệt độ) và `relativehumidity` (độ ẩm tương đối) tại vị trí quan trắc.
-    \item \textbf{Trục thời gian:} `datetime_local` (múi giờ địa phương), đảm bảo tính đồng bộ tuyệt đối khi kết hợp với các nguồn dữ liệu khí tượng vệ tinh.
-\end{itemize}
-
-Quy trình thu thập được tự động hóa bằng ngôn ngữ Python thông qua các mô-đun được xây dựng riêng cho dự án, thực hiện truy vấn và lưu trữ theo từng tháng để tối ưu hóa quản lý dữ liệu. Kết quả thu được là một tập dữ liệu thô gồm 9.418 bản ghi, tạo tiền đề quan trọng cho các công đoạn làm sạch dữ liệu cơ bản.
-
-\subsection{Dữ liệu khí tượng từ Open-Meteo API}
-
-Quy trình thu thập dữ liệu khí tượng (đóng vai trò là các biến ngoại sinh -- Exogenous Variables) được thực hiện thông qua giao diện lập trình ứng dụng Open-Meteo Archive API dựa trên mô hình tái phân tích ERA5. Đây là nguồn dữ liệu quan trọng giúp mô hình học được các tương quan vật lý giữa biến động khí quyển và nồng độ chất ô nhiễm.
-
-Dựa trên cấu trúc triển khai thực tế của các thuật toán được xây dựng cho dự án, các thông số kỹ thuật được xác lập như sau:
-\begin{itemize}
-    \item \textbf{Nguồn dữ liệu:} Sử dụng Endpoint \texttt{archive-api.open-meteo.com/v1/archive} để trích xuất dữ liệu lịch sử ổn định.
-    \item \textbf{Tham số vị trí:} Truy vấn được thực hiện tại tọa độ định danh $10.8231^\circ$N (Vĩ độ) và $106.6297^\circ$E (Kinh độ), tương ứng với vị trí trạm quan trắc tại khu vực trung tâm TP.HCM.
-    \item \textbf{Khung thời gian:} Dữ liệu bao phủ liên tục từ ngày 01/11/2024 đến 10/02/2026 với múi giờ được chuẩn hóa là \texttt{Asia/Ho\_Chi\_Minh}.
-    \item \textbf{Phương thức thực hiện:} Sử dụng thư viện \texttt{requests} để gửi tham vấn API và \texttt{pandas} để chuyển đổi cấu trúc JSON sang định dạng bảng. Toàn bộ 08 biến số khí tượng được tải về đồng thời trong một truy vấn duy nhất để đảm bảo tính đồng bộ tuyệt đối về mặt thời gian.
-\end{itemize}
-
-Danh sách các biến số khí tượng được thu thập tích hợp bao gồm:
-\begin{itemize}
-    \item \textbf{temperature\_2m ($^\circ$C) \& relative\_humidity\_2m (\%):} Nhiệt độ và độ ẩm tại độ cao 02 mét.
-    \item \textbf{precipitation (mm):} Lượng mưa tích lũy theo giờ.
-    \item \textbf{surface\_pressure (hPa):} Áp suất khí quyển tại bề mặt.
-        \item \textbf{wind\_speed\_10m (m/s) \& wind\_direction\_10m ($^\circ$):} Tốc độ và hướng gió tại độ cao 10 mét.
-    \item \textbf{temperature\_180m ($^\circ$C):} Nhiệt độ khí quyển tại độ cao 180 mét.
-    \item \textbf{boundary\_layer\_height (m):} Độ cao của tầng biên khí quyển tại thời điểm quan trắc.
-\end{itemize}
-
-Tập dữ liệu khí tượng sau khi tải về là dữ liệu nền tảng cho giai đoạn làm sạch dữ liệu cơ bản.
-
-\section{Làm sạch dữ liệu cơ bản (Basic Cleaning)}
-
-Sau khi thu thập từ các nguồn API khác nhau, dữ liệu thô được đưa vào quy trình làm sạch sơ bộ nhằm đảm bảo tính toàn vẹn và đồng bộ cho các bước phân tích tiếp theo. Các thao tác chính trong giai đoạn này bao gồm:
-
-\begin{itemize}
-    \item \textbf{Chuẩn hóa trục thời gian:} Dữ liệu thời gian của cả hai nguồn được chuyển đổi sang định dạng \texttt{datetime} tiêu chuẩn. Nhằm đảm bảo phép hợp nhất diễn ra chính xác, các thông tin về múi giờ được xử lý đưa về dạng nguyên bản (\textit{timezone-naive}).
-    \item \textbf{Hợp nhất dữ liệu đa nguồn:} Nghiên cứu thực hiện phép hợp nhất trái (\textit{Left Join}) với dữ liệu nồng độ bụi mịn làm trục chính. Việc đồng bộ hóa được thực thi dựa trên sự khớp nối chính xác giữa các mốc thời gian theo giờ từ nguồn OpenAQ và các biến số ngoại sinh từ Open-Meteo.
-    \item \textbf{Tối ưu hóa cấu trúc chuỗi thời gian:} Tập dữ liệu sau khi hợp nhất được sắp xếp theo trình tự thời gian tăng dần. Trục thời gian sau đó được thiết lập làm chỉ mục (\textit{Index}) của tập dữ liệu, tạo điều kiện thuận lợi cho việc khai thác các đặc trưng trễ (\textit{lag features}) và các thành phần mùa vụ ở các giai đoạn sau.
-    \item \textbf{Dọn dẹp hậu hợp nhất:} Loại bỏ các trường dữ liệu trùng lặp hoặc các cột trung gian phát sinh trong quá trình kết nối bảng, đảm bảo tính tinh gọn và tối ưu bộ nhớ cho các mô hình học máy.
-\end{itemize}
-
-Kết quả của giai đoạn làm sạch cơ bản là một tập dữ liệu hợp nhất gồm 9.418 bản ghi, bao hàm đầy đủ thông tin về nồng độ bụi mịn và 08 đặc trưng khí tượng tương ứng cho mỗi khung giờ tại khu vực nghiên cứu.
-
-\section{Phân tích khám phá (EDA - Train Only)}
-
-Quá trình phân tích dữ liệu khám phá được thực hiện trên tập huấn luyện (tương ứng với 60\% tổng dữ liệu theo trình tự thời gian) nhằm ngăn chặn hiện tượng rò rỉ thông tin từ tương lai vào mô hình. Quy trình này được cấu trúc theo ba cấp độ tiếp cận: đơn biến, nhị biến và đa biến.
-
-\subsection{Phân tích đơn biến (Univariate Analysis)}
-
-Phân tích đơn biến đóng vai trò nhận diện các đặc tính phân phối thống kê và xác định mức độ hiện diện của các giá trị ngoại lai trong từng biến số độc lập.
-
-\subsubsection{Đặc tính phân phối của các hạt bụi mịn}
-
-Phân phối của các chỉ số PM2.5, PM1 và UM003 đều thể hiện dạng lệch phải (\textit{Right-skewed}) đặc trưng của dữ liệu nồng độ chất ô nhiễm trong không khí đô thị.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{visuals/pm25_distribution.png}
-    \caption{Phân phối nồng độ PM2.5 trong tập huấn luyện (Histplot và Boxplot)}
-    \label{fig:pm25_dist}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{visuals/pm1_distribution.png}
-    \caption{Phân phối nồng độ PM1 trong tập huấn luyện (Histplot và Boxplot)}
-    \label{fig:pm1_dist}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{visuals/um003_distribution.png}
-    \caption{Phân phối mật độ hạt bụi mịn kích thước $>$ 0.3$\mu m$ (UM003)}
-    \label{fig:um003_dist}
-\end{figure}
-
-\begin{itemize}
-    \item \textbf{PM2.5:} Giá trị đỉnh tập trung quanh ngưỡng 25--35 $\mu g/m^3$. Đáng chú ý, tập dữ liệu xuất hiện nhiều giá trị ngoại lai vượt mức 100 $\mu g/m^3$. Theo kết quả đối chiếu, các đỉnh ô nhiễm này thường tương ứng với các sự kiện khí tượng đặc biệt như nghịch nhiệt (\textit{Temperature Inversion}), khiến bụi mịn bị giữ lại ở tầng thấp không thể khuếch tán \cite{Le2024}.
-    \item \textbf{PM1 và UM003:} Phân phối của hai biến này gần như đồng dạng với PM2.5. Sự tương quan chặt chẽ này khẳng định PM2.5 là thành phần chủ đạo bao hàm cả các hạt siêu mịn (PM1), đồng thời cho thấy việc sử dụng đồng thời cả ba chỉ số có thể dẫn đến hiện tượng đa cộng tuyến (\textit{Multicollinearity}) trong quá trình huấn luyện mô hình.
-\end{itemize}
-
-\subsubsection{Đối sánh dữ liệu khí tượng giữa hai nguồn trạm và vệ tinh}
-
-Nghiên cứu thực hiện so sánh phân phối giữa cảm biến tại trạm (OpenAQ) và mô hình tái phân tích khí quyển (Open-Meteo) để đánh giá độ tin cậy.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{visuals/temp_comparison.png}
-    \caption{Đối sánh phân phối Nhiệt độ giữa nguồn OpenAQ và Open-Meteo}
-    \label{fig:temp_comparison}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{visuals/humid_comparison.png}
-    \caption{Đối sánh phân phối Độ ẩm giữa nguồn OpenAQ và Open-Meteo}
-    \label{fig:humid_comparison}
-\end{figure}
-
-\subsubsection{Các đặc trưng khí quyển và động lực học}
-
-Ngoài nhiệt độ và độ ẩm, các biến số khí quyển khác từ nguồn Open-Meteo cung cấp cái nhìn sâu sắc về các cơ chế khuếch tán và lắng đọng của bụi mịn.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{visuals/precip_distribution.png}
-    \caption{Phân phối lượng mưa tích lũy theo giờ (Precipitation)}
-    \label{fig:precip_dist}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{visuals/pressure_distribution.png}
-    \caption{Phân phối áp suất bề mặt (Surface Pressure)}
-    \label{fig:pressure_dist}
-\end{figure}
-
-\begin{itemize}
-    \item \textbf{Lượng mưa (Precipitation):} Tập dữ liệu cho thấy đặc tính phân phối rời rạc với tần suất các giờ không mưa chiếm ưu thế tuyệt đối. Lượng mưa là nhân tố then chốt thực hiện quá trình lắng đọng ướt (\textit{Wet deposition}), giúp loại bỏ các hạt PM2.5 ra khỏi khí quyển thông qua cơ chế rửa trôi \cite{Seinfeld2016}.
-    \item \textbf{Áp suất bề mặt (Surface Pressure):} Biến số này biến động trong khoảng hẹp 1005--1015 hPa. Áp suất cao thường tương ứng với các trạng thái khí quyển ổn định, làm hạn chế sự khuếch tán thẳng đứng của các khối khí ô nhiễm \cite{Tai2010}.
-\end{itemize}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{visuals/wind_speed_distribution.png}
-    \caption{Phân phối tốc độ gió tại độ cao 10m (Wind Speed)}
-    \label{fig:wind_speed_dist}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{visuals/wind_rose_plot.png}
-    \caption{Biểu đồ hoa gió thể hiện hướng và tốc độ gió thịnh hành (Wind Rose)}
-    \label{fig:wind_rose}
-\end{figure}
-
-\begin{itemize}
-    \item \textbf{Tốc độ và hướng gió:} Tốc độ gió tập trung chủ yếu ở dải 2--6 m/s. Tốc độ gió thấp thường dẫn đến hiện tượng đình trệ khí quyển (\textit{Stagnation}), là nguyên nhân chính gây ra các đợt tích tụ bụi mịn cục bộ. Biểu đồ hoa gió giúp xác định các hướng vận chuyển chất ô nhiễm chủ đạo từ các khu vực phát thải lân cận.
-\end{itemize}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{visuals/blh_distribution.png}
-    \caption{Phân phối độ cao tầng biên khí quyển (Boundary Layer Height)}
-    \label{fig:blh_dist}
-\end{figure}
-
-\begin{itemize}
-    \item \textbf{Độ cao tầng biên (BLH):} BLH thể hiện sự biến thiên lớn giữa ngày và đêm. Một tầng biên nông (thấp) sẽ nén không gian thể tích khả dụng cho việc pha trộn bụi mịn, dẫn đến nồng độ quan trắc được tăng cao ngay cả khi cường độ nguồn thải không thay đổi \cite{Tai2010}.
-\end{itemize}
-
-\subsection{Phân tích nhị biến (Bivariate Analysis)}
-
-Phân tích nhị biến tập trung vào việc làm rõ mối tương quan giữa nồng độ PM2.5 với các nhóm đặc trưng khí tượng và các yếu tố thời gian, từ đó định hình chiến lược lựa chọn đặc trưng (\textit{Feature Selection}) hiệu quả.
-
-\subsubsection{Phân tích ma trận tương quan (Correlation Analysis)}
-
-Hệ số tương quan Pearson được sử dụng để đánh giá mức độ liên kết tuyến tính giữa các cặp biến số trong tập dữ liệu.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\textwidth]{visuals/correlation_heatmap.png}
-    \caption{Ma trận tương quan Pearson giữa nồng độ bụi mịn và các biến khí tượng}
-    \label{fig:correlation_heatmap}
-\end{figure}
-
-\begin{itemize}
-    \item \textbf{Đa cộng tuyến giữa các kích cỡ hạt bụi:} PM2.5 thể hiện sự tương quan cực kỳ chặt chẽ ($r \approx 0.99$) với PM1 và UM003. Kết quả này gợi ý rằng các hạt bụi kích thước khác nhau có cùng nguồn gốc phát thải và cơ chế vận chuyển. Để tối ưu hóa mô hình và tránh hiện tượng đa cộng tuyến (\textit{Multicollinearity}), các biến PM1 và UM003 sẽ được loại bỏ trong giai đoạn tiền xử lý.
-    \item \textbf{Tương quan với các biến ngoại sinh:} PM2.5 có tương quan nghịch rõ rệt với độ cao tầng biên (BLH) và tốc độ gió. Điều này phù hợp với lý thuyết về sự pha loãng chất ô nhiễm: khi gió mạnh và tầng biên cao, thể tích không khí để bụi mịn khuếch tán tăng lên, dẫn đến nồng độ quan trắc được giảm xuống \cite{Seinfeld2016}.
-\end{itemize}
-
-\subsubsection{Các quy luật biến động theo thời gian (Temporal patterns)}
-
-Nồng độ bụi mịn tại khu vực nghiên cứu thể hiện các đặc tính mang tính chu kỳ rõ rệt, phản ánh sự tương tác giữa hoạt động của con người và các hiện tượng tự nhiên.
-
-\begin{figure}[H]
-    \centering
-    \begin{subfigure}[b]{1\textwidth}
-        \includegraphics[width=\textwidth]{visuals/diurnal_pattern.png}
-        \caption{Biến động theo giờ trong ngày}
-    \end{subfigure}
-    \vspace{0.3cm}
-    \begin{subfigure}[b]{1\textwidth}
-        \includegraphics[width=\textwidth]{visuals/weekly_pattern.png}
-        \caption{Biến động theo ngày trong tuần}
-    \end{subfigure}
-    \vspace{0.3cm}
-    \begin{subfigure}[b]{1\textwidth}
-        \includegraphics[width=\textwidth]{visuals/monthly_pattern.png}
-        \caption{Biến động theo tháng}
-    \end{subfigure}
-    \caption{Quy luật biến động thời gian của nồng độ PM2.5}
-    \label{fig:temporal_patterns}
-\end{figure}
-
-\begin{itemize}
-    \item \textbf{Chu kỳ giờ trong ngày (Diurnal Cycle):} Biểu đồ nồng độ theo giờ thể hiện đặc tính hai đỉnh (\textit{Bimodal}). Đỉnh thứ nhất xuất hiện vào khoảng 7h--9h sáng, trùng với giờ cao điểm giao thông. Đỉnh thứ hai cao và kéo dài hơn xuất hiện vào đêm khuya (sau 20h), thời điểm tầng biên khí quyển hạ xuống thấp nhất, gây ra hiện tượng tích tụ chất ô nhiễm gần bề mặt \cite{Tai2010}.
-    \item \textbf{Chu kỳ ngày trong tuần (Weekly Cycle):} Nồng độ trung bình có xu hướng giảm vào các ngày cuối tuần, phản ánh sự sụt giảm trong lưu lượng giao thông công nghiệp và hoạt động xây dựng trong thành phố.
-    \item \textbf{Biến động theo tháng (Monthly Variation):} Nồng độ bụi mịn thể hiện sự khác biệt rõ rệt giữa mùa khô và mùa mưa. Các tháng cuối năm và đầu năm (tháng 11, 12, 1) ghi nhận nồng độ cao vượt trội do điều kiện khí quyển ổn định và ít mưa. Ngược lại, các tháng giữa năm (tháng 6, 7, 8) có nồng độ thấp và ổn định hơn nhờ hiệu ứng rửa trôi của mưa \cite{Seinfeld2016}.
-\end{itemize}
-
-\subsubsection{Tương quan giữa nồng độ PM2.5 và các yếu tố khí tượng}
-
-Việc phân tích các mối quan hệ nhị biến trực tiếp giữa bụi mịn và các điều kiện vật lý giúp hiểu rõ cơ chế khuếch tán và tích tụ tại địa phương.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{visuals/pm25_vs_windspeed.png}
-    \caption{Mối quan hệ nghịch biến giữa nồng độ PM2.5 và tốc độ gió}
-    \label{fig:pm25_vs_windspeed}
-\end{figure}
-
-\begin{itemize}
-    \item \textbf{PM2.5 và Tốc độ gió:} Kết quả thể hiện mối quan hệ nghịch biến rõ rệt. Khi tốc độ gió vượt ngưỡng 4 m/s, nồng độ PM2.5 giảm xuống mức thấp và ổn định. Điều này được giải thích bởi sự gia tăng năng lượng pha loãng và vận chuyển ngang của các khối khí ô nhiễm. Ngược lại, các điều kiện "lặng gió" ($<$ 1.5 m/s) là tiền đề cho các sự kiện tích tụ ô nhiễm nghiêm trọng do chất thải từ giao thông không thể phát tán \cite{Tai2010}.
-\end{itemize}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{visuals/pm25_vs_humidity.png}
-    \caption{Phân tích biến thiên nồng độ PM2.5 theo độ ẩm tương đối}
-    \label{fig:pm25_vs_humidity}
-\end{figure}
-
-\begin{itemize}
-    \item \textbf{PM2.5 và Độ ẩm:} Mối quan hệ này có tính phức tạp và phụ thuộc vào ngưỡng. Trong dải độ ẩm từ 50\% đến 80\%, nồng độ PM2.5 có xu hướng tăng tỷ lệ thuận với độ ẩm do cơ chế tăng trưởng hút ẩm (\textit{Hygroscopic growth}), khiến các sol khí liên kết với hơi nước và tăng trọng lượng \cite{Seinfeld2016}. Tuy nhiên, ở các ngưỡng độ ẩm cực cao ($>$ 90\%), nồng độ thường giảm mạnh, phản ánh sự xuất hiện của mưa và quá trình rửa trôi khí quyển.
-\end{itemize}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{visuals/pm25_by_wind_dir.png}
-    \caption{Phân bổ nồng độ PM2.5 trung bình theo các hướng gió chính}
-    \label{fig:pm25_by_wind_dir}
-\end{figure}
-
-\begin{itemize}
-    \item \textbf{PM2.5 và Hướng gió:} Sự phân bổ nồng độ bụi theo hướng gió cho thấy tính bất đẳng hướng rõ rệt. Các hướng gió mang nồng độ cao thường tương ứng với các luồng khí thổi từ phía các khu công nghiệp phụ cận hoặc dọc theo các trục lộ giao thông huyết mạch của TP.HCM, chứng minh tầm quan trọng của nguồn phát thải liên tỉnh và liên vùng đối với chất lượng không khí đô thị.
-\end{itemize}
-
-\subsection{Phân tích đa biến (Multivariate Analysis)}
-
-Giai đoạn cuối của quá trình EDA tập trung vào việc bóc tách các thành phần cấu trúc của chuỗi thời gian và nhận diện nguồn phát thải thông qua sự kết hợp giữa nồng độ chất ô nhiễm và động lực học khí quyển.
-
-\subsubsection{Nhận diện hướng vận chuyển ô nhiễm (Pollution Rose)}
-
-Biểu đồ hoa gió ô nhiễm (\textit{Pollution Rose}) tích hợp thông tin về nồng độ PM2.5, hướng gió và tần suất xuất hiện để xác định các hành lang vận chuyển chất ô nhiễm chủ đạo.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{visuals/pollution_rose.png}
-    \caption{Biểu đồ Pollution Rose thể hiện nồng độ PM2.5 theo hướng gió}
-    \label{fig:pollution_rose}
-\end{figure}
-
-Kết quả phân tích cho thấy các sự kiện ô nhiễm nồng độ cao (trên 80 $\mu g/m^3$) có tần suất xuất hiện lớn khi gió thổi từ các hướng Nam và Tây Nam. Điều này cho thấy ảnh hưởng mạnh mẽ của các nguồn thải từ các khu công nghiệp tập trung và hoạt động cảng biển phía Nam thành phố, đóng đóng vai trò là nguồn phát thải liên vùng quan trọng \cite{Le2024}.
-
-\subsubsection{Phân rã chuỗi thời gian (Time-series Decomposition)}
-
-Quá trình phân rã chuỗi thời gian giúp tách biệt các thành phần xu hướng, chu kỳ và nhiễu nhằm hiểu rõ cấu trúc nội tại của dữ liệu bụi mịn.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{visuals/ts_decomposition.png}
-    \caption{Phân rã chuỗi thời gian PM2.5 thành các thành phần Xu hướng, Chu kỳ và Nhiễu}
-    \label{fig:ts_decomp}
-\end{figure}
-
-\begin{itemize}
-    \item \textbf{Thành phần xu hướng (\textit{Trend}):} Thể hiện sự biến động dài hạn, phản ánh các tác động của điều kiện khí tượng vĩ mô và nhịp độ kinh tế xã hội.
-    \item \textbf{Thành phần chu kỳ (\textit{Seasonality}):} Chu kỳ 24 giờ lặp lại rất ổn định, khẳng định sự chi phối tuyệt đối của hoạt động giao thông đô thị và sự co giãn của tầng biên khí quyển (BLH) đối với nồng độ bụi mịn tại bề mặt \cite{Tai2010}.
-    \item \textbf{Thành phần nhiễu (\textit{Residuals}):} Đại diện cho các biến động ngẫu nhiên hoặc các sự kiện ô nhiễm cực đoan không mang tính chu kỳ.
-\end{itemize}
-
-\subsubsection{Phân tích tự tương quan (ACF và PACF)}
-
-Việc đánh giá tính tự tương quan đóng vai trò nền tảng trong việc thiết lập các tham số cho các mô hình dự báo thống kê và học máy.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{visuals/acf_pacf_plot.png}
-    \caption{Biểu đồ tự tương quan (ACF) và tự tương quan riêng phần (PACF) của chuỗi PM2.5}
-    \label{fig:acf_pacf}
-\end{figure}
-
-\begin{itemize}
-    \item \textbf{Tự tương quan (ACF):} Hàm ACF giảm chậm (\textit{Slow decay}) và có tính lặp lại sau mỗi 24 giờ. Điều này cho thấy chuỗi dữ liệu có tính "trì trệ" (\textit{Persistence}) rất cao, nghĩa là nồng độ bụi trong quá khứ có ảnh hưởng kéo dài đến các thời điểm tương lai.
-    \item \textbf{Tự tương quan riêng phần (PACF):} PACF xuất hiện các hệ số có ý nghĩa thống kê tại các bậc trễ đầu tiên (Lag 1, 2). Kết quả này khẳng định cấu trúc tự hồi quy (\textit{Autoregressive}) mạnh mẽ của dữ liệu, là cơ sở để áp dụng các mô hình ARIMA hoặc các mạng học sâu như LSTM nhằm nắm bắt các phụ thuộc thời gian ngắn hạn và dài hạn \cite{Box2015}.
-\end{itemize}
-
-\subsubsection{Phân loại chất lượng không khí (AQI Categorization)}
-
-Để đánh giá mức độ ảnh hưởng của nồng độ PM2.5 đối với sức khỏe cộng đồng, nghiên cứu thực hiện phân loại dữ liệu huấn luyện theo Quy chuẩn kỹ thuật quốc gia về môi trường của Việt Nam (VN\_AQI).
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\textwidth]{visuals/aqi_class_balance.png}
-    \caption{Phân bổ các mức chất lượng không khí (AQI) theo tiêu chuẩn Việt Nam trong tập huấn luyện}
-    \label{fig:aqi_balance}
-\end{figure}
-
-Kết quả thống kê cho thấy nồng độ PM2.5 tại khu vực nghiên cứu phần lớn thời gian nằm ở ngưỡng "Trung bình" (Moderate - 3.489 giờ) và "Tốt" (Good - 1.783 giờ). Tuy nhiên, số lượng giờ quan trắc ở mức "Kém" (Poor) và "Xấu" (Bad) vẫn chiếm tỷ lệ đáng kể, khẳng định tính cấp thiết của việc dự báo sớm nhằm bảo vệ sức khỏe người dân \cite{Le2024}.
-
-Đáng lưu ý, biểu đồ thể hiện sự mất cân bằng lớp (\textit{Class Imbalance}) cực kỳ nghiêm trọng, đặc biệt là ở mức "Rất xấu" (Very Bad) chỉ xuất hiện 2 mẫu. Sự khan hiếm của các dữ liệu ô nhiễm cực đoan trong tập huấn luyện tạo nên rào cản cho mô hình trong việc học các đặc trưng của những sự kiện hiếm gặp nhưng có tác động tiêu cực nhất \cite{Box2015}.
-
-\vspace{0.5cm}
-\noindent\textit{Ghi chú chung cho chương 3:} Do quy trình phân tích khám phá (EDA) chỉ thực hiện trên tập huấn luyện (Train Only) bao gồm 60\% dữ liệu đầu tiên (từ tháng 11/2024 đến tháng 08/2025), nên các số liệu thống kê không bao gồm các tháng 9 và tháng 10. Việc giới hạn này đảm bảo tính khách quan cho quá trình tối ưu hóa mô hình và ngăn chặn hiện tượng rò rỉ thông tin từ tương lai.
-
-\section{Kết luận chương 3}
-
-Quá trình phân tích dữ liệu khám phá (EDA) trên tập huấn luyện đã cung cấp một bức tranh toàn diện về đặc tính của bụi mịn PM2.5 tại khu vực nghiên cứu, tạo tiền đề vững chắc cho việc xây dựng các mô hình dự báo. Những kết luận chính yếu từ chương này bao gồm:
-
-\begin{itemize}
-    \item \textbf{Đặc trưng thống kê và Mối quan hệ giữa các kích cỡ bụi:} Dữ liệu nồng độ bụi thể hiện dạng phân phối lệch phải mạnh với sự hiện diện thường xuyên của các giá trị ngoại lai cực đoan (\textit{outliers}), đòi hỏi các kỹ thuật chuẩn hóa mạnh mẽ trong giai đoạn tiền xử lý. Sự tương quan xấp xỉ tuyệt đối ($r \approx 0.99$) giữa PM2.5, PM1 và UM003 khẳng định tính đồng nhất trong cơ chế phát thải đô thị, đồng thời cho thấy việc tập trung dự báo PM2.5 là hướng tiếp cận đại diện tối ưu \cite{Le2024}.
-    \item \textbf{Cơ chế chi phối của yếu tố khí tượng:} Thông qua phân tích nhị biến và đa biến, nghiên cứu xác định độ cao tầng biên (BLH) và tốc độ gió là hai nhân tố có ảnh hưởng nghịch biến mạnh mẽ nhất đến nồng độ bụi mịn. Phân tích \textit{Pollution Rose} đã nhận diện được các hành lang vận chuyển ô nhiễm chủ đạo từ hướng Nam và Tây Nam, cho thấy sự ảnh hưởng từ các khu vực phát thải công nghiệp liên vùng. Ngoài ra, vai trò của lượng mưa trong việc lắng đọng ướt cũng được làm rõ, giải thích sự sụt giảm nồng độ đáng kể trong các tháng mùa mưa \cite{Seinfeld2016}.
-    \item \textbf{Tính chất chu kỳ và Cấu trúc thời gian:} Kết quả phân rã chuỗi thời gian (STL) và phân tích ACF/PACF khẳng định chuỗi dữ liệu PM2.5 mang tính chu kỳ 24 giờ ổn định và tính phụ thuộc quá khứ (\textit{Persistence}) cao. Đỉnh ô nhiễm \textit{bimodal} vào sáng sớm và đêm muộn trùng khớp với chu kỳ hoạt động giao thông và sự biến động của tầng biên khí quyển \cite{Tai2010}. Những đặc tính này gợi mở việc ứng dụng các mô hình học sâu có khả năng nắm bắt phụ thuộc thời gian như LSTM, GRU hoặc các mô hình thống kê SARIMAX tích hợp biến ngoại sinh.
-    \item \textbf{Thách thức về mất cân bằng dữ liệu:} Biểu đồ phân bổ AQI theo tiêu chuẩn Việt Nam cho thấy sự mất cân bằng lớp cực kỳ nghiêm trọng. Việc các lớp "Xấu" và "Rất xấu" chiếm tỷ lệ mẫu rất thấp đặt ra thách thức về độ nhạy (\textit{Recall}) của mô hình. Điều này đòi hỏi các chiến lược huấn luyện đặc thù để đảm bảo khả năng cảnh báo chính xác các sự kiện ô nhiễm cực đoan \cite{Box2015}.
-\end{itemize}
-
-Tóm lại, những kết quả thu được từ chương 3 không chỉ mô tả thực trạng chất lượng không khí mà còn trực tiếp định hướng cho chiến lược lựa chọn đặc trưng (\textit{Feature Selection}) và thiết lập cấu trúc mô hình tối ưu sẽ được triển khai trong chương kế tiếp.
-\section{Thiết lập mô hình cơ sở (Baseline Models)}
-% Trình bày việc khởi tạo SARIMA, XGBoost, LightGBM, LSTM, GRU với các tham số mặc định.
-\section{Chiến lược Tối ưu hóa Siêu tham số (Tuning Strategy)}
-% Không ghi kết quả ở đây. Ở đây chỉ trình bày BẠN ĐÃ TÌM KIẾM THAM SỐ NHƯ THẾ NÀO (Dùng GridSearch, Random, hay Optuna? Search space cho Learning rate/Tree depth là bao nhiêu?).
+\input{Chuong3}
+% -- CHƯƠNG 4
+\input{Chuong4}
 
 % -- CHƯƠNG 5
-\chapter{ĐÁNH GIÁ VÀ TỐI ƯU HÓA KẾT QUẢ (EVALUATION \& OPTIMIZATION)}
-\section{Đánh giá Hiệu năng Baseline (Baseline Evaluation)}
-% Đưa kết quả mô hình chưa Tune vào đây. Nhận xét sơ bộ.
-\section{Kết quả sau Tối ưu hóa (Tuned Models Performance)}
-% So sánh Before - After. Đưa bảng kết quả cuối cùng vào đây và kết luận mô hình Vô địch.
-\section{Mức độ quan trọng của đặc trưng (Feature Importance Analysis)}
-\section{Hiện tượng chênh/trễ dự báo (Lagged-Prediction Impact)}
+\input{Chuong5}
 
 % -- CHƯƠNG 6
-\chapter{KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN}
-\section{Kết luận chung}
-\section{Hạn chế của đề tài}
-\section{Hướng phát triển tương lai}
+\input{Chuong6}
 
 \newpage
+\addcontentsline{toc}{chapter}{Tài liệu tham khảo}
 \renewcommand{\bibname}{Tài liệu tham khảo}
 \bibliographystyle{plain}
 \bibliography{references}

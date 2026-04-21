@@ -1,0 +1,35 @@
+\chapter{CƠ SỞ LÝ THUYẾT}
+\section{Các yếu tố khí tượng ảnh hưởng đến PM2.5}
+Sự biến động nồng độ bụi mịn PM2.5 trong khí quyển không chỉ phụ thuộc vào cường độ phát thải từ các nguồn nhân tạo mà còn chịu sự chi phối mạnh mẽ bởi các điều kiện khí tượng. Các điều kiện này quyết định khả năng tích tụ, khuếch tán, vận chuyển và loại bỏ các hạt vật chất trong không gian đô thị \cite{Jacob2009}. Để xây dựng mô hình dự báo chính xác, nghiên cứu thực hiện khai thác dữ liệu từ hai nền tảng dữ liệu mở uy tín, cung cấp các thông số đặc trưng cho chất lượng không khí và động lực học khí quyển.
+    \subsection{Dữ liệu Chất lượng không khí (OpenAQ)}
+    OpenAQ là nền tảng dữ liệu mở toàn cầu, chuyên tổng hợp và chuẩn hóa dữ liệu chất lượng không khí thời gian thực từ các hệ thống cảm biến IoT (Internet of Things). Nghiên cứu thực hiện trích xuất chuỗi nồng độ bụi mịn PM2.5 ($\mu$g/m$^3$) làm đại diện cho chỉ số mục tiêu. Việc dự báo nồng độ PM2.5 trong khung thời gian 24 giờ tiếp theo được xác định là nhiệm vụ trọng tâm, đóng vai trò nền tảng cho việc thiết lập các cơ chế cảnh báo sớm nhằm giảm thiểu rủi ro sức khỏe cộng đồng.
+    \subsection{Dữ liệu Khí tượng (Open-Meteo API)}
+    Open-Meteo API cung cấp dữ liệu khí tượng dựa trên các mô hình tái phân tích hiện đại, tiêu biểu là mô hình ERA5 của Trung tâm Dự báo Thời tiết Tầm trung Châu Âu (ECMWF). Nghiên cứu tích hợp 08 đặc trưng khí tượng được xác định là có ảnh hưởng quyết định đến khả năng tích tụ và khuếch tán của PM2.5 \cite{Tai2010}:
+    \begin{itemize}
+        \item \textbf{Cơ chế nhiệt và ẩm:} Bao gồm nhiệt độ (2m), độ ẩm tương đối và lượng mưa. Các yếu tố này tác động đến sự biến đổi lý tính của hạt bụi và hỗ trợ cơ chế rửa trôi khí quyển tự nhiên.
+        \item \textbf{Cơ chế động lực học:} Tốc độ gió, hướng gió và áp suất bề mặt. Đây là các tác nhân trực tiếp tham gia vào quá trình pha loãng và vận chuyển chất ô nhiễm theo phương ngang.
+        \item \textbf{Cơ chế ổn định khí quyển:} Nhiệt độ ở độ cao 180m và độ cao tầng biên khí quyển (Boundary Layer Height). Các chỉ số này cho phép nhận diện trạng thái ổn định của lớp không khí sát đất, nơi PM2.5 có xu hướng tích tụ nồng độ cao khi không gian khuếch tán theo phương thẳng đứng bị giới hạn.
+    \end{itemize}
+
+\section{Ứng dụng học máy trong dự báo chất lượng không khí}
+Trong những năm gần đây, phương pháp tiếp cận bài toán dự báo chất lượng không khí đã có sự chuyển dịch mạnh mẽ từ các mô hình mô phỏng hóa lý truyền thống sang các hướng tiếp cận dựa trên dữ liệu (Data-driven). Sự kết hợp giữa các phương pháp thống kê học cổ điển và các thuật toán học máy hiện đại cho phép khai thác hiệu quả các quy luật phức tạp ẩn trong chuỗi dữ liệu nồng độ PM2.5.
+\subsection{Nhóm mô hình thống kê (ARIMA, ARIMAX, SARIMA, SARIMAX)}
+Các mô hình thống kê tự hồi quy đóng vai trò là nền tảng trong phân tích chuỗi thời gian nhờ tính minh bạch và khả năng diễn giải toán học cao. Nghiên cứu thực hiện đối sánh trên 04 biến thể chính:
+\begin{itemize}
+    \item \textbf{ARIMA (Autoregressive Integrated Moving Average):} Mô hình cơ bản kết hợp giữa thành phần tự hồi quy (AR), sai phân tích hợp (I) để đưa chuỗi về tính dừng, và trung bình trượt (MA) để xử lý sai số dự báo.
+    \item \textbf{ARIMAX:} Mở rộng từ ARIMA bằng cách tích hợp trực tiếp các biến ngoại sinh (Exogenous variables). Điều này cho phép mô hình xem xét các tác động từ bên ngoài như yếu tố khí tượng đồng thời với quy luật của chính chuỗi PM2.5.
+    \item \textbf{SARIMA (Seasonal ARIMA):} Biến thể bổ sung các tham số mùa vụ để nắm bắt các quy luật lặp lại theo chu kỳ (ví dụ: chu kỳ ngày-đêm hoặc mùa vụ trong năm) thường thấy trong dữ liệu chất lượng không khí.
+    \item \textbf{SARIMAX:} Là cấu trúc phức tạp nhất trong nhóm này, kết hợp đầy đủ các thành phần tự hồi quy, tích hợp, trung bình trượt cùng với các đặc tính mùa vụ và tác động của các biến ngoại sinh. Đây là mô hình thống kê chủ đạo được sử dụng để đối sánh hiệu năng trong nghiên cứu.
+\end{itemize}
+\subsection{Nhóm mô hình dựa trên cấu trúc cây (Random Forest, Gradient Boosting)}
+Các thuật toán dựa trên cây quyết định (Decision Trees) đặc biệt hiệu quả trong việc xử lý các quan hệ phi tuyến tính và các tập dữ liệu có nhiều biến số tương tác phức tạp.
+\begin{itemize}
+    \item \textbf{Random Forest:} Sử dụng kỹ thuật Bagging và chọn lọc đặc trưng ngẫu nhiên để xây dựng tập hợp nhiều cây quyết định độc lập. Phương pháp này giúp giảm thiểu hiện tượng quá khớp (overfitting) và tăng cường độ bền vững cho dự báo.
+    \item \textbf{XGBoost và LightGBM:} Dựa trên cơ chế Gradient Boosting, các thuật toán này xây dựng các cây quyết định tuần tự nhằm tối ưu hóa hàm mục tiêu. Chúng nổi bật với tốc độ huấn luyện cao, khả năng xử lý dữ liệu quy mô lớn và cung cấp khả năng đánh giá mức độ đóng góp của từng đặc trưng (Feature Importance), giúp nhận diện các nhân tố khí tượng ảnh hưởng nhất đến PM2.5.
+\end{itemize}
+\subsection{Nhóm mạng nơ-ron hồi quy (LSTM, GRU)}
+Đối với dữ liệu chuỗi thời gian có các đặc trưng phụ thuộc dài hạn, các kiến trúc mạng nơ-ron tái phát (RNN) là lựa chọn tối ưu nhờ khả năng ghi nhớ thông tin qua các bước thời gian.
+\begin{itemize}
+    \item \textbf{LSTM (Long Short-Term Memory):} Sử dụng cơ chế các cổng (Input, Forget, Output gates) để điều soát dòng thông tin đi qua các trạng thái ẩn. Cấu trúc này giải quyết hiệu quả vấn đề triệt tiêu đạo hàm (vanishing gradient), cho phép mô hình học được các quy luật biến động kéo dài trong chuỗi dữ liệu không khí.
+    \item \textbf{GRU (Gated Recurrent Unit):} Là biến thể tinh giản của LSTM, kết hợp các cổng thành cấu trúc Update gate và Reset gate. GRU giúp tối ưu hóa hiệu năng tính toán và thời gian huấn luyện trong khi vẫn duy trì được năng lực dự báo tương đương với LSTM.
+\end{itemize}
