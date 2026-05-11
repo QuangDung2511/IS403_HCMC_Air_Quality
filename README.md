@@ -117,8 +117,3 @@ Báo cáo chi tiết của đồ án (Đồ án IS403) được trình bày tron
     ```
 
 Chi tiết cài đặt bổ sung có thể xem tại [INSTALL_PERL.md](report/INSTALL_PERL.md).
-
----
-<p align="center">
-  <em>IS403 - Business Data Analysis | Copyright © 2024</em>
-</p>
